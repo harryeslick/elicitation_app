@@ -1,15 +1,23 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ConfirmationModal } from './components/ConfirmationModal';
 import { ControlPanel } from './components/ControlPanel';
 import { D3DistributionChart } from './components/D3DistributionChart';
 import { DistributionInputs } from './components/DistributionInputs';
+import { ScenarioEditModal } from './components/ScenarioEditModal';
 import { ScenarioTable } from './components/ScenarioTable';
 import { INITIAL_SCENARIOS } from './constants';
-import { generateCSV, parseCSV } from './services/csvUtils';
+import { generateCSV, parseCSV, ParsedCSVData } from './services/csvUtils';
 import { Distribution, ElicitationData, Scenario, ScenarioDistribution } from './types';
 
 const App: React.FC = () => {
-    const [scenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
+    const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
     const [elicitationData, setElicitationData] = useState<ElicitationData>({});
+    
+    // Modal states
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [scenarioToEdit, setScenarioToEdit] = useState<Scenario | null>(null);
+    const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
+    const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
     
     const scenarioGroups = useMemo(() => {
         const groups = new Set(scenarios.map(s => s.scenario_group));
@@ -60,8 +68,18 @@ const App: React.FC = () => {
         reader.onload = (event) => {
             try {
                 const text = event.target?.result as string;
-                const data = parseCSV(text, scenarios);
-                setElicitationData(data);
+                const parsedData: ParsedCSVData = parseCSV(text, scenarios);
+                
+                // Update both scenarios and elicitation data
+                setScenarios(parsedData.scenarios);
+                setElicitationData(parsedData.elicitationData);
+                
+                // If current selected group doesn't exist in loaded scenarios, reset to first group
+                const loadedGroups = [...new Set(parsedData.scenarios.map(s => s.scenario_group))];
+                if (selectedGroup && !loadedGroups.includes(selectedGroup)) {
+                    setSelectedGroup(loadedGroups.length > 0 ? loadedGroups[0] : null);
+                }
+                
                 alert('Data loaded successfully!');
             } catch (error) {
                 console.error("Failed to parse CSV:", error);
@@ -95,6 +113,53 @@ const App: React.FC = () => {
 
     const handleSelectGroup = useCallback((group: string) => {
         setSelectedGroup(group);
+    }, []);
+
+    const handleAddScenario = useCallback((templateScenario: Scenario) => {
+        // Create a duplicate scenario with a new ID
+        const newId = `scenario_${Date.now()}`;
+        const newScenario: Scenario = {
+            ...templateScenario,
+            id: newId
+        };
+        
+        setScenarioToEdit(newScenario);
+        setEditModalOpen(true);
+    }, []);
+
+    const handleDeleteScenario = useCallback((scenarioId: string) => {
+        setScenarioToDelete(scenarioId);
+        setConfirmDeleteModalOpen(true);
+    }, []);
+
+    const confirmDeleteScenario = useCallback(() => {
+        if (scenarioToDelete) {
+            setScenarios(prev => prev.filter(s => s.id !== scenarioToDelete));
+            
+            // Remove elicitation data for deleted scenario
+            setElicitationData(prev => {
+                const updated = { ...prev };
+                delete updated[scenarioToDelete];
+                return updated;
+            });
+            
+            // If the deleted scenario was selected, select another one
+            if (selectedScenarioId === scenarioToDelete) {
+                const remainingScenarios = scenarios.filter(s => s.id !== scenarioToDelete && s.scenario_group === selectedGroup);
+                setSelectedScenarioId(remainingScenarios.length > 0 ? remainingScenarios[0].id : null);
+            }
+        }
+        setConfirmDeleteModalOpen(false);
+        setScenarioToDelete(null);
+    }, [scenarioToDelete, scenarios, selectedGroup, selectedScenarioId]);
+
+    const handleSaveNewScenario = useCallback((scenario: Scenario) => {
+        setScenarios(prev => [...prev, scenario]);
+        setEditModalOpen(false);
+        setScenarioToEdit(null);
+        
+        // Select the new scenario
+        setSelectedScenarioId(scenario.id);
     }, []);
 
     const currentDistribution = useMemo<ScenarioDistribution | undefined>(() => {
@@ -147,6 +212,8 @@ const App: React.FC = () => {
                         selectedScenarioId={selectedScenarioId}
                         onSelectScenario={handleSelectScenario}
                         onSelectGroup={handleSelectGroup}
+                        onAddScenario={handleAddScenario}
+                        onDeleteScenario={handleDeleteScenario}
                     />
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -182,6 +249,32 @@ const App: React.FC = () => {
                     </div>
                 </main>
             </div>
+            
+            {/* Modals */}
+            <ScenarioEditModal
+                isOpen={editModalOpen}
+                scenario={scenarioToEdit}
+                groups={scenarioGroups}
+                onSave={handleSaveNewScenario}
+                onCancel={() => {
+                    setEditModalOpen(false);
+                    setScenarioToEdit(null);
+                }}
+            />
+            
+            <ConfirmationModal
+                isOpen={confirmDeleteModalOpen}
+                title="Delete Scenario"
+                message="Are you sure you want to delete this scenario? This action cannot be undone and will remove all associated elicitation data."
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={confirmDeleteScenario}
+                onCancel={() => {
+                    setConfirmDeleteModalOpen(false);
+                    setScenarioToDelete(null);
+                }}
+                isDestructive={true}
+            />
         </div>
     );
 };
