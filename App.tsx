@@ -7,11 +7,12 @@ import { ScenarioEditModal } from './components/ScenarioEditModal';
 import { ScenarioTable } from './components/ScenarioTable';
 import { INITIAL_SCENARIOS } from './constants';
 import { generateCSV, parseCSV, ParsedCSVData } from './services/csvUtils';
-import { Distribution, ElicitationData, Scenario, ScenarioDistribution } from './types';
+import { Distribution, ElicitationData, Scenario, ScenarioDistribution, UserElicitationData, UserScenarioDistribution, UserDistribution } from './types';
+import { userScenarioToScenario, getEmptyUserScenario, hasScenarioUserEdits } from './services/distributionUtils';
 
 const App: React.FC = () => {
     const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
-    const [elicitationData, setElicitationData] = useState<ElicitationData>({});
+    const [userElicitationData, setUserElicitationData] = useState<UserElicitationData>({});
     
     // Modal states
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -46,12 +47,9 @@ const App: React.FC = () => {
     }, [selectedGroup, scenariosInGroup, selectedScenarioId]);
 
 
-    const handleDistributionChange = useCallback((scenarioId: string, type: 'baseline' | 'treatment', newDistribution: Distribution) => {
-        setElicitationData(prev => {
-            const existingScenario = prev[scenarioId] || {
-                baseline: { min: 20, max: 80, mode: 40, confidence: 50 },
-                treatment: { min: 0, max: 60, mode: 30, confidence: 50 }
-            };
+    const handleDistributionChange = useCallback((scenarioId: string, type: 'baseline' | 'treatment', newDistribution: UserDistribution) => {
+        setUserElicitationData(prev => {
+            const existingScenario = prev[scenarioId] || getEmptyUserScenario();
             
             return {
                 ...prev,
@@ -72,7 +70,7 @@ const App: React.FC = () => {
                 
                 // Update both scenarios and elicitation data
                 setScenarios(parsedData.scenarios);
-                setElicitationData(parsedData.elicitationData);
+                setUserElicitationData(parsedData.userElicitationData);
                 
                 // If current selected group doesn't exist in loaded scenarios, reset to first group
                 const loadedGroups = [...new Set(parsedData.scenarios.map(s => s.scenario_group))];
@@ -91,7 +89,7 @@ const App: React.FC = () => {
     
     const handleFileDownload = useCallback(() => {
         try {
-            const csvContent = generateCSV(scenarios, elicitationData);
+            const csvContent = generateCSV(scenarios, userElicitationData);
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
@@ -105,7 +103,7 @@ const App: React.FC = () => {
             console.error("Failed to generate CSV:", error);
             alert('Error generating file for download.');
         }
-    }, [scenarios, elicitationData]);
+    }, [scenarios, userElicitationData]);
 
     const handleSelectScenario = useCallback((scenarioId: string) => {
         setSelectedScenarioId(scenarioId);
@@ -137,7 +135,7 @@ const App: React.FC = () => {
             setScenarios(prev => prev.filter(s => s.id !== scenarioToDelete));
             
             // Remove elicitation data for deleted scenario
-            setElicitationData(prev => {
+            setUserElicitationData(prev => {
                 const updated = { ...prev };
                 delete updated[scenarioToDelete];
                 return updated;
@@ -162,26 +160,41 @@ const App: React.FC = () => {
         setSelectedScenarioId(scenario.id);
     }, []);
 
-    const currentDistribution = useMemo<ScenarioDistribution | undefined>(() => {
+    const currentUserDistribution = useMemo<UserScenarioDistribution | undefined>(() => {
         if (!selectedScenarioId) return undefined;
-        return elicitationData[selectedScenarioId];
-    }, [selectedScenarioId, elicitationData]);
+        return userElicitationData[selectedScenarioId] || getEmptyUserScenario();
+    }, [selectedScenarioId, userElicitationData]);
+
+    const currentDistribution = useMemo<ScenarioDistribution | undefined>(() => {
+        if (!currentUserDistribution) return undefined;
+        return userScenarioToScenario(currentUserDistribution);
+    }, [currentUserDistribution]);
 
     const currentScenario = useMemo(() => {
         if (!selectedScenarioId) return undefined;
         return scenarios.find(s => s.id === selectedScenarioId);
     }, [selectedScenarioId, scenarios]);
 
+    // Check completion status for scenarios
+    const scenarioCompletionStatus = useMemo(() => {
+        const status: { [scenarioId: string]: boolean } = {};
+        for (const scenario of scenarios) {
+            const userData = userElicitationData[scenario.id];
+            status[scenario.id] = userData ? hasScenarioUserEdits(userData) : false;
+        }
+        return status;
+    }, [scenarios, userElicitationData]);
+
     const dataForChart = useMemo(() => {
         const scenarioIdsInGroup = new Set(scenariosInGroup.map(s => s.id));
         const filteredData: ElicitationData = {};
-        for (const scenarioId in elicitationData) {
+        for (const scenarioId in userElicitationData) {
             if (scenarioIdsInGroup.has(scenarioId)) {
-                filteredData[scenarioId] = elicitationData[scenarioId];
+                filteredData[scenarioId] = userScenarioToScenario(userElicitationData[scenarioId]);
             }
         }
         return filteredData;
-    }, [elicitationData, scenariosInGroup]);
+    }, [userElicitationData, scenariosInGroup]);
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800 p-4 sm:p-6 lg:p-8">
@@ -210,6 +223,7 @@ const App: React.FC = () => {
                         groups={scenarioGroups}
                         selectedGroup={selectedGroup}
                         selectedScenarioId={selectedScenarioId}
+                        completionStatus={scenarioCompletionStatus}
                         onSelectScenario={handleSelectScenario}
                         onSelectGroup={handleSelectGroup}
                         onAddScenario={handleAddScenario}
@@ -222,7 +236,7 @@ const App: React.FC = () => {
                             {selectedScenarioId && (
                                 <DistributionInputs
                                     scenarioId={selectedScenarioId}
-                                    distribution={currentDistribution}
+                                    userDistribution={currentUserDistribution}
                                     scenario={currentScenario}
                                     onDistributionChange={handleDistributionChange}
                                 />

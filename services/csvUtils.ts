@@ -1,18 +1,19 @@
-import { Scenario, ElicitationData, Distribution } from '../types';
+import { Distribution, ElicitationData, Scenario, UserElicitationData, UserScenarioDistribution } from '../types';
+import { userDistributionToDistribution, DEFAULT_BASELINE, DEFAULT_TREATMENT, distributionToUserDistribution, scenarioToUserScenario } from './distributionUtils';
 
 const DIST_HEADERS = ['baseline_min', 'baseline_max', 'baseline_mode', 'baseline_confidence', 'treatment_min', 'treatment_max', 'treatment_mode', 'treatment_confidence'];
 
-export function generateCSV(scenarios: Scenario[], data: ElicitationData): string {
+export function generateCSV(scenarios: Scenario[], userData: UserElicitationData): string {
     const scenarioHeaders = scenarios.length > 0 ? Object.keys(scenarios[0]).filter(k => k !== 'id') : [];
     const headers = ['scenario_id', ...scenarioHeaders, ...DIST_HEADERS];
 
     const rows = scenarios.map(scenario => {
         const scenarioData = scenarioHeaders.map(h => scenario[h]);
-        const dist = data[scenario.id];
+        const userDist = userData[scenario.id];
 
-        const distData = dist ? [
-            dist.baseline.min, dist.baseline.max, dist.baseline.mode, dist.baseline.confidence,
-            dist.treatment.min, dist.treatment.max, dist.treatment.mode, dist.treatment.confidence,
+        const distData = userDist ? [
+            userDist.baseline.min ?? '', userDist.baseline.max ?? '', userDist.baseline.mode ?? '', userDist.baseline.confidence ?? '',
+            userDist.treatment.min ?? '', userDist.treatment.max ?? '', userDist.treatment.mode ?? '', userDist.treatment.confidence ?? '',
         ] : Array(8).fill('');
 
         return [scenario.id, ...scenarioData, ...distData].join(',');
@@ -23,13 +24,13 @@ export function generateCSV(scenarios: Scenario[], data: ElicitationData): strin
 
 export interface ParsedCSVData {
     scenarios: Scenario[];
-    elicitationData: ElicitationData;
+    userElicitationData: UserElicitationData;
 }
 
 export function parseCSV(csvText: string, existingScenarios: Scenario[]): ParsedCSVData {
     const lines = csvText.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
-    const data: ElicitationData = {};
+    const userData: UserElicitationData = {};
     const scenarios: Scenario[] = [...existingScenarios]; // Start with existing scenarios
 
     const scenarioMap = new Map(existingScenarios.map(s => [s.id, s]));
@@ -63,25 +64,26 @@ export function parseCSV(csvText: string, existingScenarios: Scenario[]): Parsed
             scenarioMap.set(scenarioId, newScenario);
         }
         
-        // Parse elicitation data for this scenario
-        const baseline: Distribution = {
-            min: parseFloat(row['baseline_min']),
-            max: parseFloat(row['baseline_max']),
-            mode: parseFloat(row['baseline_mode']),
-            confidence: parseFloat(row['baseline_confidence']),
+        // Parse user elicitation data for this scenario (preserving empty values as null)
+        const parseValue = (value: string): number | null => {
+            return value === '' ? null : parseFloat(value);
         };
-        const treatment: Distribution = {
-            min: parseFloat(row['treatment_min']),
-            max: parseFloat(row['treatment_max']),
-            mode: parseFloat(row['treatment_mode']),
-            confidence: parseFloat(row['treatment_confidence']),
+
+        const userBaseline = {
+            min: parseValue(row['baseline_min']),
+            max: parseValue(row['baseline_max']),
+            mode: parseValue(row['baseline_mode']),
+            confidence: parseValue(row['baseline_confidence']),
+        };
+        const userTreatment = {
+            min: parseValue(row['treatment_min']),
+            max: parseValue(row['treatment_max']),
+            mode: parseValue(row['treatment_mode']),
+            confidence: parseValue(row['treatment_confidence']),
         };
         
-        // Basic validation to check if parsing was successful
-        if (Object.values(baseline).every(v => !isNaN(v)) && Object.values(treatment).every(v => !isNaN(v))) {
-            data[scenarioId] = { baseline, treatment };
-        }
+        userData[scenarioId] = { baseline: userBaseline, treatment: userTreatment };
     }
 
-    return { scenarios, elicitationData: data };
+    return { scenarios, userElicitationData: userData };
 }

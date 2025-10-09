@@ -6,6 +6,7 @@ interface ScenarioTableProps {
     groups: string[];
     selectedGroup: string | null;
     selectedScenarioId: string | null;
+    completionStatus: { [scenarioId: string]: boolean };
     onSelectScenario: (id: string) => void;
     onSelectGroup: (group: string) => void;
     onAddScenario: (templateScenario: Scenario) => void;
@@ -16,7 +17,8 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
     scenarios, 
     groups, 
     selectedGroup, 
-    selectedScenarioId, 
+    selectedScenarioId,
+    completionStatus,
     onSelectScenario, 
     onSelectGroup,
     onAddScenario,
@@ -61,6 +63,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                 <table className="w-full text-sm text-left text-gray-500">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                         <tr>
+                            <th scope="col" className="px-6 py-3 w-20">Status</th>
                             {headers.map(header => (
                                 <th key={header} scope="col" className="px-6 py-3">{header}</th>
                             ))}
@@ -75,6 +78,19 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                     className={`border-b hover:bg-gray-100 cursor-pointer ${selectedScenarioId === scenario.id ? 'bg-blue-100 ring-2 ring-inset ring-blue-500' : 'bg-white'}`}
                                     onClick={() => onSelectScenario(scenario.id)}
                                 >
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center justify-center">
+                                            {completionStatus[scenario.id] ? (
+                                                <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </td>
                                     {headers.map(header => (
                                         <td key={`${scenario.id}-${header}`} className="px-6 py-4">
                                             {scenario[header]}
@@ -109,7 +125,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={headers.length + 1} className="text-center py-4 text-gray-500">
+                                <td colSpan={headers.length + 2} className="text-center py-4 text-gray-500">
                                     No scenarios in this group.
                                 </td>
                             </tr>

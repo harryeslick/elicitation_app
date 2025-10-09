@@ -1,17 +1,16 @@
 
 import React from 'react';
-import { Distribution, Scenario, ScenarioDistribution } from '../types';
+import { Distribution, Scenario, ScenarioDistribution, UserDistribution, UserScenarioDistribution } from '../types';
+import { DEFAULT_BASELINE, DEFAULT_TREATMENT } from '../services/distributionUtils';
 
 interface DistributionInputsProps {
     scenarioId: string;
-    distribution?: ScenarioDistribution;
+    userDistribution?: UserScenarioDistribution;
     scenario?: Scenario;
-    onDistributionChange: (scenarioId: string, type: 'baseline' | 'treatment', newDistribution: Distribution) => void;
+    onDistributionChange: (scenarioId: string, type: 'baseline' | 'treatment', newDistribution: UserDistribution) => void;
 }
 
-const defaultDistribution: Distribution = { min: 20, max: 80, mode: 40, confidence: 50 };
-const defaultTreatmentDistribution: Distribution = { min: 0, max: 60, mode: 30, confidence: 50 };
-const defaultScenarioDist: ScenarioDistribution = { baseline: defaultDistribution, treatment: defaultTreatmentDistribution };
+const emptyUserDistribution: UserDistribution = { min: null, max: null, mode: null, confidence: null };
 
 // Helper function to calculate yield impact
 const calculateYieldImpact = (lossPercentage: number, baselineYield: number): number => {
@@ -21,17 +20,29 @@ const calculateYieldImpact = (lossPercentage: number, baselineYield: number): nu
 const InputRow: React.FC<{
     title: 'Baseline' | 'Treatment';
     color: 'blue' | 'green';
-    data: Distribution;
-    onChange: (newDistribution: Distribution) => void;
+    data: UserDistribution;
+    defaults: Distribution;
+    onChange: (newDistribution: UserDistribution) => void;
     maxConstraints?: Distribution; // For treatment, this will be the baseline values
     baselineYield?: number; // Yield in tonnes from scenario data
-}> = ({ title, color, data, onChange, maxConstraints, baselineYield }) => {
+}> = ({ title, color, data, defaults, onChange, maxConstraints, baselineYield }) => {
     
-    const handleValueChange = (field: keyof Distribution, value: number) => {
+    const handleValueChange = (field: keyof UserDistribution, value: number) => {
         // Allow empty/invalid values during typing, but don't propagate them
         if (isNaN(value) || value === null || value === undefined) return;
 
-        let { min, max, mode, confidence } = { ...data };
+        // Get current values (use defaults for null values)
+        const currentMin = data.min ?? defaults.min;
+        const currentMax = data.max ?? defaults.max;
+        const currentMode = data.mode ?? defaults.mode;
+        const currentConfidence = data.confidence ?? defaults.confidence;
+
+        let { min, max, mode, confidence } = { 
+            min: currentMin, 
+            max: currentMax, 
+            mode: currentMode, 
+            confidence: currentConfidence 
+        };
         
         // Apply max constraints for treatment (treatment values cannot exceed baseline values)
         const getMaxConstraint = (field: keyof Distribution) => {
@@ -63,7 +74,15 @@ const InputRow: React.FC<{
                 confidence = Math.round(Math.max(1, Math.min(value, 100)));
                 break;
         }
-        onChange({ min, max, mode, confidence });
+        // Convert back to UserDistribution (set to null if matches defaults)
+        const newUserDistribution: UserDistribution = {
+            min: min === defaults.min ? null : min,
+            max: max === defaults.max ? null : max,
+            mode: mode === defaults.mode ? null : mode,
+            confidence: confidence === defaults.confidence ? null : confidence,
+        };
+
+        onChange(newUserDistribution);
     };
 
     return (
@@ -78,7 +97,8 @@ const InputRow: React.FC<{
                         <input
                             type="number"
                             id={`${title}-${field}`}
-                            value={Math.round(data[field])}
+                            value={data[field] === null ? '' : Math.round(data[field])}
+                            placeholder={Math.round(defaults[field]).toString()}
                             onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === '' || val === '-') return; // Allow empty or negative sign during typing
@@ -88,11 +108,11 @@ const InputRow: React.FC<{
                                 }
                             }}
                             onBlur={(e) => {
-                                // On blur, ensure we have a valid integer value
+                                // On blur, if empty, leave it empty (default will be used)
                                 const val = e.target.value;
-                                if (val === '' || isNaN(parseInt(val))) {
-                                    // Reset to current valid value if input is invalid
-                                    e.target.value = Math.round(data[field]).toString();
+                                if (val !== '' && isNaN(parseInt(val))) {
+                                    // Reset to empty if input is invalid
+                                    e.target.value = '';
                                 }
                             }}
                             min={0}
@@ -103,9 +123,8 @@ const InputRow: React.FC<{
                         {baselineYield && (
                             <div className="text-xs font-medium text-center py-1 px-2 bg-gray-100 rounded border">
                                 <span className={`text-${color}-600`}>
-                                    {calculateYieldImpact(data[field], baselineYield).toFixed(2)}t
+                                    {calculateYieldImpact(data[field] ?? defaults[field], baselineYield).toFixed(2)}t
                                 </span>
-
                             </div>
                         )}
                     </div>
@@ -118,18 +137,19 @@ const InputRow: React.FC<{
                     type="range" 
                     min="1" 
                     max="100" 
-                    value={data.confidence} 
+                    value={data.confidence ?? defaults.confidence} 
                     onChange={(e) => handleValueChange('confidence', Number(e.target.value))}
                     className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-${color}-500`}
                 />
-                <span className="text-sm w-8 text-right">{data.confidence}</span>
+                <span className="text-sm w-8 text-right">{data.confidence ?? defaults.confidence}</span>
             </div>
         </div>
     );
 }
 
-export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenarioId, distribution, scenario, onDistributionChange }) => {
-    const { baseline, treatment } = distribution || defaultScenarioDist;
+export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenarioId, userDistribution, scenario, onDistributionChange }) => {
+    const baseline = userDistribution?.baseline || emptyUserDistribution;
+    const treatment = userDistribution?.treatment || emptyUserDistribution;
     const baselineYield = scenario ? scenario['Yield (t)'] : undefined;
 
     return (
@@ -154,6 +174,7 @@ export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenario
                     title="Baseline"
                     color="blue"
                     data={baseline}
+                    defaults={DEFAULT_BASELINE}
                     baselineYield={baselineYield}
                     onChange={(newDist) => onDistributionChange(scenarioId, 'baseline', newDist)}
                 />
@@ -161,7 +182,8 @@ export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenario
                     title="Treatment"
                     color="green"
                     data={treatment}
-                    maxConstraints={baseline}
+                    defaults={DEFAULT_TREATMENT}
+                    maxConstraints={DEFAULT_BASELINE} // Use default baseline for constraints
                     baselineYield={baselineYield}
                     onChange={(newDist) => onDistributionChange(scenarioId, 'treatment', newDist)}
                 />
