@@ -7,6 +7,7 @@ interface DistributionInputsProps {
     scenarioId: string;
     userDistribution?: UserScenarioDistribution;
     scenario?: Scenario;
+    yieldColumn?: string | null;
     onDistributionChange: (scenarioId: string, type: 'baseline' | 'treatment', newDistribution: UserDistribution) => void;
 }
 
@@ -147,10 +148,10 @@ const InputRow: React.FC<{
     );
 }
 
-export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenarioId, userDistribution, scenario, onDistributionChange }) => {
+export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenarioId, userDistribution, scenario, yieldColumn, onDistributionChange }) => {
     const baseline = userDistribution?.baseline || emptyUserDistribution;
     const treatment = userDistribution?.treatment || emptyUserDistribution;
-    const baselineYield = scenario ? scenario['Yield (t)'] : undefined;
+    const baselineYield = scenario && yieldColumn ? scenario[yieldColumn] : undefined;
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">

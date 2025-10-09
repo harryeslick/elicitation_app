@@ -8,6 +8,7 @@ interface D3DistributionChartProps {
     allData: ElicitationData;
     selectedDistribution?: ScenarioDistribution;
     currentScenario?: Scenario;
+    yieldColumn?: string | null;
     onDistributionChange: (scenarioId: string, type: 'baseline' | 'treatment', newDistribution: Distribution) => void;
 }
 
@@ -20,6 +21,7 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
     allData, 
     selectedDistribution, 
     currentScenario,
+    yieldColumn,
     onDistributionChange 
 }) => {
     const svgRef = useRef<SVGSVGElement>(null);
@@ -296,8 +298,8 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
             const formatTooltip = (value: number) => {
                 const percentage = Math.round(value * 10) / 10;
                 let tonnage = "N/A";
-                if (currentScenario && currentScenario["Yield (t)"]) {
-                    const baselineYield = currentScenario["Yield (t)"] as number;
+                if (currentScenario && yieldColumn && currentScenario[yieldColumn]) {
+                    const baselineYield = currentScenario[yieldColumn] as number;
                     // Calculate remaining yield after loss: baselineYield * (1 - lossPercentage / 100)
                     tonnage = (baselineYield * (1 - percentage / 100)).toFixed(2);
                 }

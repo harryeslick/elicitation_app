@@ -1,0 +1,5 @@
+scenario_id,scenario_group,Location,Crop Type,Field Size (ha),Expected Yield (t/ha),Total Yield (t),baseline_min,baseline_max,baseline_mode,baseline_confidence,treatment_min,treatment_max,treatment_mode,treatment_confidence
+Avocado_Field_A,Horticultural,North Farm,Avocado,5.2,12.5,65,,,,,,,,,
+Corn_Field_B,Grain Crops,South Farm,Corn,15.8,8.4,132.72,15,45,25,60,5,35,18,75
+Citrus_Field_C,Horticultural,East Farm,Orange,3.7,18.2,67.34,,,,,,,,,
+Wheat_Field_D,Grain Crops,West Farm,Wheat,25.5,6.8,173.4,,,,,,,,,

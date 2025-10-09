@@ -13,6 +13,7 @@ import { ElicitationData, Scenario, ScenarioDistribution, UserDistribution, User
 const App: React.FC = () => {
     const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
     const [userElicitationData, setUserElicitationData] = useState<UserElicitationData>({});
+    const [yieldColumn, setYieldColumn] = useState<string | null>('Yield (t)'); // Default yield column
     
     // Modal states
     const [editModalOpen, setEditModalOpen] = useState(false);
@@ -68,9 +69,10 @@ const App: React.FC = () => {
                 const text = event.target?.result as string;
                 const parsedData: ParsedCSVData = parseCSV(text, scenarios);
                 
-                // Update both scenarios and elicitation data
+                // Update scenarios, elicitation data, and yield column
                 setScenarios(parsedData.scenarios);
                 setUserElicitationData(parsedData.userElicitationData);
+                setYieldColumn(parsedData.yieldColumn);
                 
                 // If current selected group doesn't exist in loaded scenarios, reset to first group
                 const loadedGroups = [...new Set(parsedData.scenarios.map(s => s.scenario_group))];
@@ -238,6 +240,7 @@ const App: React.FC = () => {
                                     scenarioId={selectedScenarioId}
                                     userDistribution={currentUserDistribution}
                                     scenario={currentScenario}
+                                    yieldColumn={yieldColumn}
                                     onDistributionChange={handleDistributionChange}
                                 />
                             )}
@@ -252,6 +255,7 @@ const App: React.FC = () => {
                                     onDistributionChange={handleDistributionChange}
                                     selectedDistribution={currentDistribution}
                                     currentScenario={currentScenario}
+                                    yieldColumn={yieldColumn}
                                />
                             )}
                             {!selectedScenarioId && (

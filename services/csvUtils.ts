@@ -1,13 +1,34 @@
 import { Scenario, UserElicitationData } from '../types';
 
 const DIST_HEADERS = ['baseline_min', 'baseline_max', 'baseline_mode', 'baseline_confidence', 'treatment_min', 'treatment_max', 'treatment_mode', 'treatment_confidence'];
+const RESERVED_HEADERS = ['scenario_id', 'scenario_group', ...DIST_HEADERS];
+
+// Function to find yield column using regex
+function findYieldColumn(headers: string[]): string | null {
+    const yieldRegex = /yield/i;
+    return headers.find(header => yieldRegex.test(header)) || null;
+}
 
 export function generateCSV(scenarios: Scenario[], userData: UserElicitationData): string {
-    const scenarioHeaders = scenarios.length > 0 ? Object.keys(scenarios[0]).filter(k => k !== 'id') : [];
+    if (scenarios.length === 0) {
+        throw new Error('Cannot generate CSV: no scenarios provided');
+    }
+    
+    // Get all possible headers from all scenarios to handle dynamic columns
+    const allScenarioHeaders = new Set<string>();
+    scenarios.forEach(scenario => {
+        Object.keys(scenario).forEach(key => {
+            if (key !== 'id') {
+                allScenarioHeaders.add(key);
+            }
+        });
+    });
+    
+    const scenarioHeaders = Array.from(allScenarioHeaders).sort();
     const headers = ['scenario_id', ...scenarioHeaders, ...DIST_HEADERS];
 
     const rows = scenarios.map(scenario => {
-        const scenarioData = scenarioHeaders.map(h => scenario[h]);
+        const scenarioData = scenarioHeaders.map(h => scenario[h] ?? ''); // Handle missing properties
         const userDist = userData[scenario.id];
 
         const distData = userDist ? [
@@ -24,16 +45,33 @@ export function generateCSV(scenarios: Scenario[], userData: UserElicitationData
 export interface ParsedCSVData {
     scenarios: Scenario[];
     userElicitationData: UserElicitationData;
+    yieldColumn: string | null;
 }
 
 export function parseCSV(csvText: string, existingScenarios: Scenario[]): ParsedCSVData {
     const lines = csvText.trim().split('\n');
+    if (lines.length < 2) {
+        throw new Error('CSV file must contain at least a header row and one data row');
+    }
+    
     const headers = lines[0].split(',').map(h => h.trim());
+    
+    // Validate required columns
+    if (!headers.includes('scenario_id')) {
+        throw new Error('CSV file must contain a "scenario_id" column');
+    }
+    if (!headers.includes('scenario_group')) {
+        throw new Error('CSV file must contain a "scenario_group" column');
+    }
+    
+    // Find yield column
+    const yieldColumn = findYieldColumn(headers);
+    
     const userData: UserElicitationData = {};
     const scenarios: Scenario[] = [...existingScenarios]; // Start with existing scenarios
 
     const scenarioMap = new Map(existingScenarios.map(s => [s.id, s]));
-    const scenarioHeaders = headers.filter(h => !['scenario_id', ...DIST_HEADERS].includes(h));
+    const scenarioHeaders = headers.filter(h => !RESERVED_HEADERS.includes(h));
 
     for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
@@ -84,5 +122,5 @@ export function parseCSV(csvText: string, existingScenarios: Scenario[]): Parsed
         userData[scenarioId] = { baseline: userBaseline, treatment: userTreatment };
     }
 
-    return { scenarios, userElicitationData: userData };
+    return { scenarios, userElicitationData: userData, yieldColumn };
 }
