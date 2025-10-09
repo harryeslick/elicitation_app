@@ -1,15 +1,22 @@
 
 import React from 'react';
-import { Distribution, ScenarioDistribution } from '../types';
+import { Distribution, Scenario, ScenarioDistribution } from '../types';
 
 interface DistributionInputsProps {
     scenarioId: string;
     distribution?: ScenarioDistribution;
+    scenario?: Scenario;
     onDistributionChange: (scenarioId: string, type: 'baseline' | 'treatment', newDistribution: Distribution) => void;
 }
 
-const defaultDistribution: Distribution = { min: 0, max: 100, mode: 50, confidence: 50 };
-const defaultScenarioDist: ScenarioDistribution = { baseline: defaultDistribution, treatment: defaultDistribution };
+const defaultDistribution: Distribution = { min: 20, max: 80, mode: 40, confidence: 50 };
+const defaultTreatmentDistribution: Distribution = { min: 0, max: 60, mode: 30, confidence: 50 };
+const defaultScenarioDist: ScenarioDistribution = { baseline: defaultDistribution, treatment: defaultTreatmentDistribution };
+
+// Helper function to calculate yield impact
+const calculateYieldImpact = (lossPercentage: number, baselineYield: number): number => {
+    return baselineYield * (1 - lossPercentage / 100);
+};
 
 const InputRow: React.FC<{
     title: 'Baseline' | 'Treatment';
@@ -17,7 +24,8 @@ const InputRow: React.FC<{
     data: Distribution;
     onChange: (newDistribution: Distribution) => void;
     maxConstraints?: Distribution; // For treatment, this will be the baseline values
-}> = ({ title, color, data, onChange, maxConstraints }) => {
+    baselineYield?: number; // Yield in tonnes from scenario data
+}> = ({ title, color, data, onChange, maxConstraints, baselineYield }) => {
     
     const handleValueChange = (field: keyof Distribution, value: number) => {
         // Allow empty/invalid values during typing, but don't propagate them
@@ -63,8 +71,10 @@ const InputRow: React.FC<{
             <h4 className={`font-semibold text-lg text-${color}-600`}>{title}</h4>
             <div className="grid grid-cols-3 gap-x-4 gap-y-2">
                 {(['min', 'mode', 'max'] as const).map((field) => (
-                    <div key={field}>
-                        <label htmlFor={`${title}-${field}`} className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
+                    <div key={field} className="space-y-1">
+                        <label htmlFor={`${title}-${field}`} className="block text-sm font-medium text-gray-700 capitalize">
+                            {field} (%)
+                        </label>
                         <input
                             type="number"
                             id={`${title}-${field}`}
@@ -90,6 +100,14 @@ const InputRow: React.FC<{
                             step="1"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
+                        {baselineYield && (
+                            <div className="text-xs font-medium text-center py-1 px-2 bg-gray-100 rounded border">
+                                <span className={`text-${color}-600`}>
+                                    {calculateYieldImpact(data[field], baselineYield).toFixed(2)}t
+                                </span>
+
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
@@ -110,17 +128,33 @@ const InputRow: React.FC<{
     );
 }
 
-export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenarioId, distribution, onDistributionChange }) => {
+export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenarioId, distribution, scenario, onDistributionChange }) => {
     const { baseline, treatment } = distribution || defaultScenarioDist;
+    const baselineYield = scenario ? scenario['Yield (t)'] : undefined;
 
     return (
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Distribution Parameters</h2>
+            <div className="mb-6 p-4 bg-blue-50 rounded-md border border-blue-200">
+                <div className="space-y-3 text-sm text-gray-700">
+                    <p className="font-medium text-gray-800">How to use this section:</p>
+                    <div className="space-y-2">
+                        <p><strong>• Baseline:</strong> Your estimates of percentage damage/loss WITHOUT any treatment intervention.</p>
+                        <p><strong>• Treatment:</strong> Your estimates of percentage damage/loss AFTER applying treatment (always ≤ baseline).</p>
+                        <p><strong>• Min/Mode/Max:</strong> Define the range and most likely value of your uncertainty about the damage percentage.</p>
+                        <p><strong>• Confidence:</strong> How peaked your distribution is (higher = more certain about the mode value).</p>
+                        {baselineYield && (
+                            <p><strong>• Impact values:</strong> Show expected tonnage ({baselineYield}t baseline) after applying damage percentage.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
             <div className="space-y-6">
                 <InputRow 
                     title="Baseline"
                     color="blue"
                     data={baseline}
+                    baselineYield={baselineYield}
                     onChange={(newDist) => onDistributionChange(scenarioId, 'baseline', newDist)}
                 />
                 <InputRow 
@@ -128,6 +162,7 @@ export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenario
                     color="green"
                     data={treatment}
                     maxConstraints={baseline}
+                    baselineYield={baselineYield}
                     onChange={(newDist) => onDistributionChange(scenarioId, 'treatment', newDist)}
                 />
             </div>

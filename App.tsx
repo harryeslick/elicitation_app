@@ -41,8 +41,8 @@ const App: React.FC = () => {
     const handleDistributionChange = useCallback((scenarioId: string, type: 'baseline' | 'treatment', newDistribution: Distribution) => {
         setElicitationData(prev => {
             const existingScenario = prev[scenarioId] || {
-                baseline: { min: 0, max: 100, mode: 50, confidence: 50 },
-                treatment: { min: 0, max: 100, mode: 50, confidence: 50 }
+                baseline: { min: 20, max: 80, mode: 40, confidence: 50 },
+                treatment: { min: 0, max: 60, mode: 30, confidence: 50 }
             };
             
             return {
@@ -102,6 +102,11 @@ const App: React.FC = () => {
         return elicitationData[selectedScenarioId];
     }, [selectedScenarioId, elicitationData]);
 
+    const currentScenario = useMemo(() => {
+        if (!selectedScenarioId) return undefined;
+        return scenarios.find(s => s.id === selectedScenarioId);
+    }, [selectedScenarioId, scenarios]);
+
     const dataForChart = useMemo(() => {
         const scenarioIdsInGroup = new Set(scenariosInGroup.map(s => s.id));
         const filteredData: ElicitationData = {};
@@ -151,6 +156,7 @@ const App: React.FC = () => {
                                 <DistributionInputs
                                     scenarioId={selectedScenarioId}
                                     distribution={currentDistribution}
+                                    scenario={currentScenario}
                                     onDistributionChange={handleDistributionChange}
                                 />
                             )}
@@ -164,6 +170,7 @@ const App: React.FC = () => {
                                     allData={dataForChart}
                                     onDistributionChange={handleDistributionChange}
                                     selectedDistribution={currentDistribution}
+                                    currentScenario={currentScenario}
                                />
                             )}
                             {!selectedScenarioId && (

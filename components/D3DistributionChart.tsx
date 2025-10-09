@@ -1,30 +1,33 @@
 import * as d3 from 'd3';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { getBetaPdfPoints } from '../services/betaUtils';
-import { Distribution, ElicitationData, ScenarioDistribution } from '../types';
+import { Distribution, ElicitationData, Scenario, ScenarioDistribution } from '../types';
 
 interface D3DistributionChartProps {
     scenarioId: string;
     allData: ElicitationData;
     selectedDistribution?: ScenarioDistribution;
+    currentScenario?: Scenario;
     onDistributionChange: (scenarioId: string, type: 'baseline' | 'treatment', newDistribution: Distribution) => void;
 }
 
-const defaultDistribution: Distribution = { min: 0, max: 100, mode: 50, confidence: 50 };
-const defaultScenarioDist: ScenarioDistribution = { baseline: defaultDistribution, treatment: defaultDistribution };
+const defaultBaselineDistribution: Distribution = { min: 20, max: 80, mode: 40, confidence: 50 };
+const defaultTreatmentDistribution: Distribution = { min: 0, max: 60, mode: 30, confidence: 50 };
+const defaultScenarioDist: ScenarioDistribution = { baseline: defaultBaselineDistribution, treatment: defaultTreatmentDistribution };
 
 export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({ 
     scenarioId, 
     allData, 
     selectedDistribution, 
+    currentScenario,
     onDistributionChange 
 }) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     
     const { baseline, treatment } = selectedDistribution || defaultScenarioDist;
-    const baselineDistribution = baseline || defaultDistribution;
-    const treatmentDistribution = treatment || defaultDistribution;
+    const baselineDistribution = baseline || defaultBaselineDistribution;
+    const treatmentDistribution = treatment || defaultTreatmentDistribution;
 
         const handleDrag = useCallback((type: 'baseline' | 'treatment', parameter: 'min' | 'mode' | 'max', newValue: number) => {
         if (isNaN(newValue)) {
@@ -267,10 +270,39 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
         // Add draggable control points
         const pointsGroup = g.append("g").attr("class", "control-points");
 
+        // Remove any existing tooltips first
+        d3.selectAll(".chart-tooltip").remove();
+
+        // Create tooltip element
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "chart-tooltip")
+            .style("position", "absolute")
+            .style("background", "rgba(0, 0, 0, 0.8)")
+            .style("color", "white")
+            .style("padding", "8px 12px")
+            .style("border-radius", "4px")
+            .style("font-size", "12px")
+            .style("font-family", "sans-serif")
+            .style("pointer-events", "none")
+            .style("opacity", 0)
+            .style("z-index", "1000");
+
         controlPoints.forEach((point, i) => {
             const isBaseline = point.type === 'baseline';
-            const yPos = height + (isBaseline ? 30 : 50); // Moved down to avoid label overlap
+            const yPos = height + (isBaseline ? 45 : 65); // Moved further down to avoid label overlap
             const color = isBaseline ? "#3b82f6" : "#22c55e";
+
+            // Helper function to calculate tonnage and format tooltip
+            const formatTooltip = (value: number) => {
+                const percentage = Math.round(value * 10) / 10;
+                let tonnage = "N/A";
+                if (currentScenario && currentScenario["Yield (t)"]) {
+                    const baselineYield = currentScenario["Yield (t)"] as number;
+                    // Calculate remaining yield after loss: baselineYield * (1 - lossPercentage / 100)
+                    tonnage = (baselineYield * (1 - percentage / 100)).toFixed(2);
+                }
+                return `${percentage}% (${tonnage} t)`;
+            };
 
             const pointGroup = pointsGroup.append("g")
                 .attr("class", `point-${i}`)
@@ -302,10 +334,17 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
                 .text(point.label);
 
             // Add drag behavior
+            let isDragging = false;
             pointGroup.call(
                 d3.drag<SVGGElement, unknown>()
-                    .on("start", function() {
+                    .on("start", function(event) {
+                        isDragging = true;
                         circle.attr("r", 10);
+                        // Show tooltip during drag - no transition to avoid flickering
+                        tooltip.style("opacity", 0.9)
+                            .html(formatTooltip(point.x))
+                            .style("left", (event.sourceEvent.pageX + 10) + "px")
+                            .style("top", (event.sourceEvent.pageY - 28) + "px");
                     })
                     .on("drag", function(event) {
                         // Get mouse position relative to the SVG element and adjust for margin
@@ -315,14 +354,43 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
                         // Convert pixel position to data value
                         const rawValue = xScale.invert(x);
                         
+                        // Update tooltip with current drag value - no transition for smooth updates
+                        const clampedValue = Math.max(0, Math.min(100, rawValue));
+                        tooltip.html(formatTooltip(clampedValue))
+                            .style("left", (event.sourceEvent.pageX + 10) + "px")
+                            .style("top", (event.sourceEvent.pageY - 28) + "px");
 
-                        
                         handleDrag(point.type as 'baseline' | 'treatment', point.parameter as 'min' | 'mode' | 'max', rawValue);
                     })
                     .on("end", function() {
+                        isDragging = false;
                         circle.attr("r", 8);
+                        // Hide tooltip after drag ends with transition
+                        tooltip.transition()
+                            .duration(300)
+                            .style("opacity", 0);
                     })
             );
+
+            // Update hover events to respect dragging state
+            pointGroup
+                .on("mouseenter", function(event) {
+                    if (!isDragging) {
+                        tooltip.transition()
+                            .duration(200)
+                            .style("opacity", 0.9);
+                        tooltip.html(formatTooltip(point.x))
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 28) + "px");
+                    }
+                })
+                .on("mouseleave", function() {
+                    if (!isDragging) {
+                        tooltip.transition()
+                            .duration(500)
+                            .style("opacity", 0);
+                    }
+                });
         });
 
         // Add title
@@ -334,7 +402,12 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
             .attr("font-weight", "bold")
             .text(`Outcome Distribution for Scenario ${scenarioId.split('_')[1]}`);
 
-    }, [baselineDistribution, treatmentDistribution, allData, scenarioId, handleDrag]);
+        // Cleanup function to remove tooltip on component unmount
+        return () => {
+            d3.selectAll(".chart-tooltip").remove();
+        };
+
+    }, [baselineDistribution, treatmentDistribution, allData, scenarioId, currentScenario, handleDrag]);
 
     return (
         <div ref={containerRef} className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200">
