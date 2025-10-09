@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Distribution, Scenario, ScenarioDistribution, UserDistribution, UserScenarioDistribution } from '../types';
 import { DEFAULT_BASELINE, DEFAULT_TREATMENT } from '../services/distributionUtils';
+import { Distribution, Scenario, UserDistribution, UserScenarioDistribution } from '../types';
 
 interface DistributionInputsProps {
     scenarioId: string;

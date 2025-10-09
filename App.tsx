@@ -7,8 +7,8 @@ import { ScenarioEditModal } from './components/ScenarioEditModal';
 import { ScenarioTable } from './components/ScenarioTable';
 import { INITIAL_SCENARIOS } from './constants';
 import { generateCSV, parseCSV, ParsedCSVData } from './services/csvUtils';
-import { Distribution, ElicitationData, Scenario, ScenarioDistribution, UserElicitationData, UserScenarioDistribution, UserDistribution } from './types';
-import { userScenarioToScenario, getEmptyUserScenario, hasScenarioUserEdits } from './services/distributionUtils';
+import { getEmptyUserScenario, hasScenarioUserEdits, userScenarioToScenario } from './services/distributionUtils';
+import { ElicitationData, Scenario, ScenarioDistribution, UserDistribution, UserElicitationData, UserScenarioDistribution } from './types';
 
 const App: React.FC = () => {
     const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);

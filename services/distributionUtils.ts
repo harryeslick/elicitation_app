@@ -1,4 +1,4 @@
-import { Distribution, UserDistribution, ScenarioDistribution, UserScenarioDistribution } from '../types';
+import { Distribution, ScenarioDistribution, UserDistribution, UserScenarioDistribution } from '../types';
 
 // Default values for distributions
 export const DEFAULT_BASELINE: Distribution = { min: 20, max: 80, mode: 40, confidence: 50 };

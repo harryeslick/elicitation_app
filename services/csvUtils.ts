@@ -1,5 +1,4 @@
-import { Distribution, ElicitationData, Scenario, UserElicitationData, UserScenarioDistribution } from '../types';
-import { userDistributionToDistribution, DEFAULT_BASELINE, DEFAULT_TREATMENT, distributionToUserDistribution, scenarioToUserScenario } from './distributionUtils';
+import { Scenario, UserElicitationData } from '../types';
 
 const DIST_HEADERS = ['baseline_min', 'baseline_max', 'baseline_mode', 'baseline_confidence', 'treatment_min', 'treatment_max', 'treatment_mode', 'treatment_confidence'];
 
