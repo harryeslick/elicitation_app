@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ScenarioTable } from './components/ScenarioTable';
-import { DistributionChart } from './components/DistributionChart';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ControlPanel } from './components/ControlPanel';
+import { D3DistributionChart } from './components/D3DistributionChart';
 import { DistributionInputs } from './components/DistributionInputs';
-import { Scenario, Distribution, ElicitationData, ScenarioDistribution } from './types';
+import { ScenarioTable } from './components/ScenarioTable';
 import { INITIAL_SCENARIOS } from './constants';
-import { parseCSV, generateCSV } from './services/csvUtils';
+import { generateCSV, parseCSV } from './services/csvUtils';
+import { Distribution, ElicitationData, Scenario, ScenarioDistribution } from './types';
 
 const App: React.FC = () => {
     const [scenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
@@ -39,16 +39,20 @@ const App: React.FC = () => {
 
 
     const handleDistributionChange = useCallback((scenarioId: string, type: 'baseline' | 'treatment', newDistribution: Distribution) => {
-        setElicitationData(prev => ({
-            ...prev,
-            [scenarioId]: {
-                ...(prev[scenarioId] || {
-                    baseline: { min: 0, max: 100, mode: 50, confidence: 50 },
-                    treatment: { min: 0, max: 100, mode: 50, confidence: 50 }
-                }),
-                [type]: newDistribution
-            }
-        }));
+        setElicitationData(prev => {
+            const existingScenario = prev[scenarioId] || {
+                baseline: { min: 0, max: 100, mode: 50, confidence: 50 },
+                treatment: { min: 0, max: 100, mode: 50, confidence: 50 }
+            };
+            
+            return {
+                ...prev,
+                [scenarioId]: {
+                    ...existingScenario,
+                    [type]: newDistribution
+                }
+            };
+        });
     }, []);
 
     const handleFileUpload = useCallback((file: File) => {
@@ -154,7 +158,7 @@ const App: React.FC = () => {
                         
                         <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 min-h-[500px]">
                             {selectedScenarioId && (
-                               <DistributionChart
+                               <D3DistributionChart
                                     key={selectedScenarioId} // Force re-render on scenario change
                                     scenarioId={selectedScenarioId}
                                     allData={dataForChart}

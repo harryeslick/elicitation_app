@@ -19,24 +19,31 @@ const InputRow: React.FC<{
 }> = ({ title, color, data, onChange }) => {
     
     const handleValueChange = (field: keyof Distribution, value: number) => {
-        if (isNaN(value)) return;
+        // Allow empty/invalid values during typing, but don't propagate them
+        if (isNaN(value) || value === null || value === undefined) return;
 
         let { min, max, mode, confidence } = { ...data };
         
         switch (field) {
             case 'min':
-                min = Math.max(0, Math.min(value, max));
-                mode = Math.max(min, mode);
+                min = Math.round(Math.max(0, Math.min(value, 100)));
+                // Only adjust mode if the new min is greater than current mode
+                if (min > mode) {
+                    mode = min;
+                }
                 break;
             case 'max':
-                max = Math.min(100, Math.max(value, min));
-                mode = Math.min(max, mode);
+                max = Math.round(Math.min(100, Math.max(value, 0)));
+                // Only adjust mode if the new max is less than current mode
+                if (max < mode) {
+                    mode = max;
+                }
                 break;
             case 'mode':
-                mode = Math.max(min, Math.min(value, max));
+                mode = Math.round(Math.max(min, Math.min(value, max)));
                 break;
             case 'confidence':
-                confidence = Math.max(1, Math.min(value, 100));
+                confidence = Math.round(Math.max(1, Math.min(value, 100)));
                 break;
         }
         onChange({ min, max, mode, confidence });
@@ -52,11 +59,26 @@ const InputRow: React.FC<{
                         <input
                             type="number"
                             id={`${title}-${field}`}
-                            value={data[field]}
-                            onChange={(e) => handleValueChange(field, parseFloat(e.target.value))}
+                            value={Math.round(data[field])}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '' || val === '-') return; // Allow empty or negative sign during typing
+                                const numVal = parseInt(val);
+                                if (!isNaN(numVal)) {
+                                    handleValueChange(field, numVal);
+                                }
+                            }}
+                            onBlur={(e) => {
+                                // On blur, ensure we have a valid integer value
+                                const val = e.target.value;
+                                if (val === '' || isNaN(parseInt(val))) {
+                                    // Reset to current valid value if input is invalid
+                                    e.target.value = Math.round(data[field]).toString();
+                                }
+                            }}
                             min={0}
                             max={100}
-                            step="0.1"
+                            step="1"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
                     </div>
