@@ -26,44 +26,71 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
     const baselineDistribution = baseline || defaultDistribution;
     const treatmentDistribution = treatment || defaultDistribution;
 
-    const handleDrag = useCallback((type: 'baseline' | 'treatment', parameter: 'min' | 'mode' | 'max', newValue: number) => {
-        console.log(`handleDrag called: type=${type}, parameter=${parameter}, newValue=${newValue}, isNaN=${isNaN(newValue)}`);
-        
-        // Safety check for invalid values
-        if (isNaN(newValue) || !isFinite(newValue)) {
-            console.warn('Invalid newValue received in handleDrag:', newValue);
+        const handleDrag = useCallback((type: 'baseline' | 'treatment', parameter: 'min' | 'mode' | 'max', newValue: number) => {
+        if (isNaN(newValue)) {
             return;
         }
+
+        let clampedValue = Math.round(Math.max(0, Math.min(100, newValue)));
         
-        const current = type === 'baseline' ? baselineDistribution : treatmentDistribution;
-        let { min, max, mode, confidence } = { ...current };
+        // For treatment, enforce that values cannot exceed corresponding baseline values
+        if (type === 'treatment') {
+            switch (parameter) {
+                case 'min':
+                    clampedValue = Math.min(clampedValue, baselineDistribution.min);
+                    break;
+                case 'max':
+                    clampedValue = Math.min(clampedValue, baselineDistribution.max);
+                    break;
+                case 'mode':
+                    clampedValue = Math.min(clampedValue, baselineDistribution.mode);
+                    break;
+            }
+        }
         
-        const clampedValue = Math.round(Math.max(0, Math.min(100, newValue)));
-        console.log(`Current values: min=${min}, max=${max}, mode=${mode}, clampedValue=${clampedValue}`);
+        const currentDistribution = type === 'baseline' ? baselineDistribution : treatmentDistribution;
+        let { min, max, mode, confidence } = currentDistribution;
         
         switch (parameter) {
             case 'min':
                 min = clampedValue;
-                // Only adjust mode if it would become invalid
-                if (min > mode) mode = min;
-                // Only adjust max if it would become invalid  
-                if (min > max) max = min;
+                // Ensure max is at least min, and mode is at least min
+                max = Math.max(clampedValue, max);
+                mode = Math.max(clampedValue, mode);
                 break;
             case 'max':
                 max = clampedValue;
-                // Only adjust mode if it would become invalid
-                if (max < mode) mode = max;
-                // Only adjust min if it would become invalid
-                if (max < min) min = max;
+                // Ensure min is at most max, and mode is at most max
+                min = Math.min(clampedValue, min);
+                mode = Math.min(clampedValue, mode);
                 break;
             case 'mode':
                 // Mode must be between min and max
                 mode = Math.max(min, Math.min(clampedValue, max));
                 break;
         }
-        
-        console.log(`New values: min=${min}, max=${max}, mode=${mode}`);
-        onDistributionChange(scenarioId, type, { min, max, mode, confidence });
+
+        // If this is a baseline change, we need to also adjust treatment to maintain the constraint
+        const updatedDistribution = { min, max, mode, confidence };
+        onDistributionChange(scenarioId, type, updatedDistribution);
+
+        // If baseline was changed, enforce treatment constraints
+        if (type === 'baseline') {
+            const treatmentNeedsUpdate = 
+                treatmentDistribution.min > min ||
+                treatmentDistribution.max > max ||
+                treatmentDistribution.mode > mode;
+
+            if (treatmentNeedsUpdate) {
+                const adjustedTreatment = {
+                    min: Math.min(treatmentDistribution.min, min),
+                    max: Math.min(treatmentDistribution.max, max),
+                    mode: Math.min(treatmentDistribution.mode, mode),
+                    confidence: treatmentDistribution.confidence
+                };
+                onDistributionChange(scenarioId, 'treatment', adjustedTreatment);
+            }
+        }
     }, [baselineDistribution, treatmentDistribution, scenarioId, onDistributionChange]);
 
     useEffect(() => {
@@ -107,16 +134,7 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
             .domain([0, yDomainMax])
             .range([height, 0]);
 
-        // Debug: Log scale setup
-        console.log('Scale setup:', {
-            containerWidth,
-            containerHeight,
-            margin,
-            chartWidth: width,
-            chartHeight: height,
-            xScaleDomain: xScale.domain(),
-            xScaleRange: xScale.range()
-        });
+
 
         // Line generator
         const line = d3.line<{x: number, y: number}>()
@@ -251,7 +269,7 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
 
         controlPoints.forEach((point, i) => {
             const isBaseline = point.type === 'baseline';
-            const yPos = height + (isBaseline ? 20 : 40);
+            const yPos = height + (isBaseline ? 30 : 50); // Moved down to avoid label overlap
             const color = isBaseline ? "#3b82f6" : "#22c55e";
 
             const pointGroup = pointsGroup.append("g")
@@ -288,7 +306,6 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
                 d3.drag<SVGGElement, unknown>()
                     .on("start", function() {
                         circle.attr("r", 10);
-                        console.log(`Started dragging ${point.label} ${point.type}`, { currentValue: point.x });
                     })
                     .on("drag", function(event) {
                         // Get mouse position relative to the SVG element and adjust for margin
@@ -298,22 +315,12 @@ export const D3DistributionChart: React.FC<D3DistributionChartProps> = ({
                         // Convert pixel position to data value
                         const rawValue = xScale.invert(x);
                         
-                        console.log(`Dragging ${point.parameter}:`, {
-                            mouseX: x,
-                            mousePosScg: mousePosScg,
-                            adjustedX: x,
-                            rawValue: rawValue,
-                            chartWidth: width,
-                            marginLeft: margin.left,
-                            xScaleDomain: xScale.domain(),
-                            xScaleRange: xScale.range()
-                        });
+
                         
                         handleDrag(point.type as 'baseline' | 'treatment', point.parameter as 'min' | 'mode' | 'max', rawValue);
                     })
                     .on("end", function() {
                         circle.attr("r", 8);
-                        console.log(`Ended dragging ${point.label} ${point.type}`);
                     })
             );
         });

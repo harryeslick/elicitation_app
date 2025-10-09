@@ -144,7 +144,7 @@ const App: React.FC = () => {
                         onSelectGroup={handleSelectGroup}
                     />
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="space-y-8">
                            <ControlPanel onUpload={handleFileUpload} onDownload={handleFileDownload} />
                             {selectedScenarioId && (
@@ -156,7 +156,7 @@ const App: React.FC = () => {
                             )}
                         </div>
                         
-                        <div className="bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 min-h-[500px]">
+                        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 min-h-[500px]">
                             {selectedScenarioId && (
                                <D3DistributionChart
                                     key={selectedScenarioId} // Force re-render on scenario change

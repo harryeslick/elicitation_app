@@ -16,7 +16,8 @@ const InputRow: React.FC<{
     color: 'blue' | 'green';
     data: Distribution;
     onChange: (newDistribution: Distribution) => void;
-}> = ({ title, color, data, onChange }) => {
+    maxConstraints?: Distribution; // For treatment, this will be the baseline values
+}> = ({ title, color, data, onChange, maxConstraints }) => {
     
     const handleValueChange = (field: keyof Distribution, value: number) => {
         // Allow empty/invalid values during typing, but don't propagate them
@@ -24,23 +25,31 @@ const InputRow: React.FC<{
 
         let { min, max, mode, confidence } = { ...data };
         
+        // Apply max constraints for treatment (treatment values cannot exceed baseline values)
+        const getMaxConstraint = (field: keyof Distribution) => {
+            if (maxConstraints && field !== 'confidence') {
+                return Math.min(100, maxConstraints[field]);
+            }
+            return 100;
+        };
+        
         switch (field) {
             case 'min':
-                min = Math.round(Math.max(0, Math.min(value, 100)));
+                min = Math.round(Math.max(0, Math.min(value, getMaxConstraint('min'))));
                 // Only adjust mode if the new min is greater than current mode
                 if (min > mode) {
-                    mode = min;
+                    mode = Math.min(min, getMaxConstraint('mode'));
                 }
                 break;
             case 'max':
-                max = Math.round(Math.min(100, Math.max(value, 0)));
+                max = Math.round(Math.min(getMaxConstraint('max'), Math.max(value, 0)));
                 // Only adjust mode if the new max is less than current mode
                 if (max < mode) {
                     mode = max;
                 }
                 break;
             case 'mode':
-                mode = Math.round(Math.max(min, Math.min(value, max)));
+                mode = Math.round(Math.max(min, Math.min(value, Math.min(max, getMaxConstraint('mode')))));
                 break;
             case 'confidence':
                 confidence = Math.round(Math.max(1, Math.min(value, 100)));
@@ -77,7 +86,7 @@ const InputRow: React.FC<{
                                 }
                             }}
                             min={0}
-                            max={100}
+                            max={maxConstraints && field in maxConstraints ? Math.min(100, maxConstraints[field as keyof Distribution]) : 100}
                             step="1"
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
@@ -118,6 +127,7 @@ export const DistributionInputs: React.FC<DistributionInputsProps> = ({ scenario
                     title="Treatment"
                     color="green"
                     data={treatment}
+                    maxConstraints={baseline}
                     onChange={(newDist) => onDistributionChange(scenarioId, 'treatment', newDist)}
                 />
             </div>

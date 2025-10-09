@@ -1,41 +1,40 @@
 
 import { BetaParams } from '../types';
 
-// Using a pre-calculated table for the gamma function for simplicity and performance.
-// This avoids including a large math library.
-const GAMMA_CACHE: { [key: number]: number } = {
-    0.5: 1.7724538509055159,
-    1: 1, 1.5: 0.8862269254527579, 2: 1, 2.5: 1.329340388179137, 3: 2, 3.5: 3.323350970447842,
-    4: 6, 4.5: 11.631728396567428, 5: 24, 5.5: 46.52691358626971, 6: 120, 6.5: 209.3711111382137,
-    7: 720, 7.5: 1046.8555556910685, 8: 5040, 8.5: 5757.705556300876, 9: 40320,
-    9.5: 34546.23333780526, 10: 362880
-};
-
-function gamma(n: number): number {
-    if (GAMMA_CACHE[n]) return GAMMA_CACHE[n];
-    if (n > 10) return Math.sqrt(2 * Math.PI / n) * Math.pow((n / Math.E), n); // Stirling's approximation
-    if (n === 0) return Infinity;
-    if (n < 0) return NaN;
-    let g = 1;
-    while (n > 1) {
-        n--;
-        g *= n;
+// More robust log-gamma function to avoid numerical overflow
+function logGamma(z: number): number {
+    // Lanczos approximation for log(gamma(z))
+    const g = 7;
+    const C = [0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+              771.32342877765313, -176.61502916214059, 12.507343278686905,
+              -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    
+    if (z < 0.5) {
+        // Use reflection formula: Γ(z)Γ(1-z) = π/sin(πz)
+        return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * z)) - logGamma(1 - z);
     }
-    return g;
+    
+    z -= 1;
+    let x = C[0];
+    for (let i = 1; i < C.length; i++) {
+        x += C[i] / (z + i);
+    }
+    
+    const t = z + g + 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
 }
 
-function betaFunction(alpha: number, beta: number): number {
-    return (gamma(alpha) * gamma(beta)) / gamma(alpha + beta);
+function logBeta(alpha: number, beta: number): number {
+    return logGamma(alpha) + logGamma(beta) - logGamma(alpha + beta);
 }
 
 export function calculateBetaParams(mode: number, confidence: number): BetaParams {
     // Clamp mode to avoid issues at 0 or 1
-    const m = Math.max(0.001, Math.min(0.999, mode));
+    const m = Math.max(0.01, Math.min(0.99, mode));
     
-    // The confidence slider (1-100) is mapped to kappa (alpha + beta).
-    // A higher confidence leads to a larger kappa, resulting in a more concentrated (peaked) distribution.
-    // We start kappa at 4 to ensure alpha and beta are > 1, giving a unimodal distribution.
-    const kappa = 4 + (confidence / 100) * 50; 
+    // Use a more moderate mapping for confidence to avoid extreme parameter values
+    // This prevents numerical instability while still giving meaningful shape differences
+    const kappa = 4 + (confidence / 100) * 20; // Reduced from 50 to 20 for better stability
     
     const alpha = m * (kappa - 2) + 1;
     const beta = (1 - m) * (kappa - 2) + 1;
@@ -52,24 +51,37 @@ export function getBetaPdfPoints(min: number, max: number, mode: number, confide
     const { alpha, beta } = calculateBetaParams(scaledMode, confidence);
 
     if (alpha <= 0 || beta <= 0 || isNaN(alpha) || isNaN(beta)) {
-        return [];
+        return Array(numPoints).fill(0).map((_, i) => ({ x: min + (max - min) * i / (numPoints - 1), y: 0 }));
     }
     
-    const B = betaFunction(alpha, beta);
-    if (B === 0 || !isFinite(B)) return [];
+    // Use log-based calculation to avoid numerical overflow/underflow
+    const logB = logBeta(alpha, beta);
+    if (!isFinite(logB)) {
+        return Array(numPoints).fill(0).map((_, i) => ({ x: min + (max - min) * i / (numPoints - 1), y: 0 }));
+    }
 
     const points = [];
     for (let i = 0; i < numPoints; i++) {
         const x_norm = i / (numPoints - 1);
-        // Avoid calculating at the exact boundaries where it can be infinity for certain alpha/beta values
+        // Avoid calculating at the exact boundaries where it can be problematic
         const x_safe = Math.max(1e-6, Math.min(1 - 1e-6, x_norm));
 
-        const y_norm = (Math.pow(x_safe, alpha - 1) * Math.pow(1 - x_safe, beta - 1)) / B;
+        // Calculate PDF using log space to avoid overflow
+        const logPdf = (alpha - 1) * Math.log(x_safe) + (beta - 1) * Math.log(1 - x_safe) - logB;
+        const y_norm = Math.exp(logPdf);
 
-        points.push({
-            x: min + x_norm * range,
-            y: y_norm / range, // Scale PDF to the new range
-        });
+        // Check for valid results
+        if (!isFinite(y_norm) || y_norm < 0) {
+            points.push({
+                x: min + x_norm * range,
+                y: 0
+            });
+        } else {
+            points.push({
+                x: min + x_norm * range,
+                y: y_norm / range, // Scale PDF to the new range
+            });
+        }
     }
 
     return points;
