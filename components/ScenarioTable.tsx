@@ -1,62 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DEFAULT_BASELINE, DEFAULT_TREATMENT } from '../services/distributionUtils';
+import { getTooltipText } from '../services/tooltipService';
 import { Scenario, UserDistribution, UserElicitationData } from '../types';
 import { Tooltip } from './Tooltip';
 import { TripleHandleSlider } from './TripleHandleSlider';
-
-// Tooltips based on your YAML configuration
-const TOOLTIPS: { [key: string]: string } = {
-    'Status': 'Completion status indicator showing whether expert has provided custom distribution parameters (✓) or is using default values (○)',
-    'STATUS': 'Geographic location or site where the scenario takes place',
-    'CANOLA_PCT': 'Type of crop or vegetation being studied in this scenario',
-    'SPORACLE': 'Total area of the field or study site in hectares',
-    'BASELINE DISTRIBUTION': 'Expected yield per hectare under normal conditions (tonnes per hectare)',
-    'Baseline Distribution': 'Distribution parameters for expected outcomes WITHOUT any treatment intervention. Represents the range of possible damage/loss percentages under baseline conditions.',
-    'Treatment Distribution': 'Distribution parameters for expected outcomes AFTER applying treatment intervention. Values should be equal to or better than baseline (≤ baseline for damage scenarios).',
-    'Distribution Parameters': 'Combined baseline and treatment distribution parameters. Baseline represents outcomes without intervention, treatment represents outcomes after applying intervention. Treatment values should be ≤ baseline values.',
-    'Min': 'Minimum possible value - the best-case scenario or lowest expected outcome',
-    'Mode': 'Most likely value - the peak or most probable outcome of the distribution',
-    'Max': 'Maximum possible value - the worst-case scenario or highest expected outcome',
-    'Confidence': 'Certainty level (1-100) - higher values create a more peaked distribution around the mode, indicating greater confidence in the estimates',
-    'Actions': 'Available actions for this scenario including duplicate and delete options',
-    'ACTIONS': 'Total expected yield for the entire field (tonnes)',
-    'Yield (t)': 'Total expected yield for the entire field (tonnes)',
-    'Scenario': 'Unique identifier or name for this scenario',
-    'scenario_name': 'Unique identifier or name for this scenario',
-    'Group': 'Category or grouping that this scenario belongs to',
-    'Region': 'Geographic region or administrative area',
-    'Treatment': 'Type of intervention or treatment being applied',
-    'Control': 'Control or reference condition for comparison',
-    'Farm': 'Farm or property identifier',
-    'Season': 'Growing season or time period',
-    'Variety': 'Crop variety or cultivar being studied',
-    'Planting Date': 'Date when the crop was planted',
-    'Harvest Date': 'Expected or actual harvest date',
-    'Soil Type': 'Classification of soil type in the field',
-    'Irrigation': 'Irrigation system or water management approach',
-    'Climate': 'Climate classification or conditions',
-    'Elevation': 'Elevation above sea level (meters)',
-    'Rainfall': 'Annual or seasonal rainfall (mm)',
-    'Temperature': 'Average temperature during growing season (°C)',
-    'Humidity': 'Relative humidity levels (%)'
-};
-
-const getTooltipText = (key: string): string | null => {
-    // First try exact match
-    if (TOOLTIPS[key]) {
-        return TOOLTIPS[key];
-    }
-    
-    // Try case-insensitive match
-    const lowerKey = key.toLowerCase();
-    for (const [tooltipKey, tooltipValue] of Object.entries(TOOLTIPS)) {
-        if (tooltipKey.toLowerCase() === lowerKey) {
-            return tooltipValue;
-        }
-    }
-    
-    return null;
-};
 
 interface ScenarioTableProps {
     scenarios: Scenario[];
@@ -92,8 +39,6 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
     onDeleteScenario,
     onDistributionChange
 }) => {
-    const [tooltipsLoaded] = useState(true); // Always true since we're using hardcoded tooltips
-    
     const headers = scenarios.length > 0 ? Object.keys(scenarios[0]).filter(key => !['id', 'scenario_group'].includes(key)) : [];
 
     const handleDistributionChange = (scenarioId: string, type: 'baseline' | 'treatment', field: keyof UserDistribution, value: number) => {
@@ -217,29 +162,29 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
                         <tr>
                             <th scope="col" className="px-4 py-3 w-16">
-                                <Tooltip text={tooltipsLoaded ? getTooltipText('Status') : null}>
+                                <Tooltip text={getTooltipText('Status')}>
                                     Status
                                 </Tooltip>
                             </th>
                             {headers.map(header => (
                                 <th key={header} scope="col" className="px-4 py-3">
-                                    <Tooltip text={tooltipsLoaded ? getTooltipText(header) : null}>
+                                    <Tooltip text={getTooltipText(header)}>
                                         {header}
                                     </Tooltip>
                                 </th>
                             ))}
                             <th scope="col" className="px-4 py-3 w-80">
-                                <Tooltip text={tooltipsLoaded ? getTooltipText('Distribution Parameters') : null}>
+                                <Tooltip text={getTooltipText('Distribution Parameters')}>
                                     Distribution Parameters
                                 </Tooltip>
                             </th>
                             <th scope="col" className="px-4 py-3 w-20">
-                                <Tooltip text={tooltipsLoaded ? getTooltipText('Confidence') : null}>
+                                <Tooltip text={getTooltipText('Confidence')}>
                                     Confidence
                                 </Tooltip>
                             </th>
                             <th scope="col" className="px-4 py-3 w-32">
-                                <Tooltip text={tooltipsLoaded ? getTooltipText('Actions') : null}>
+                                <Tooltip text={getTooltipText('Actions')}>
                                     Actions
                                 </Tooltip>
                             </th>

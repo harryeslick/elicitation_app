@@ -66,18 +66,16 @@ const App: React.FC = () => {
         reader.onload = (event) => {
             try {
                 const text = event.target?.result as string;
-                const parsedData: ParsedCSVData = parseCSV(text, scenarios);
+                const parsedData: ParsedCSVData = parseCSV(text, []); // Pass empty array to rebuild from scratch
                 
                 // Update scenarios, elicitation data, and yield column
                 setScenarios(parsedData.scenarios);
                 setUserElicitationData(parsedData.userElicitationData);
                 setYieldColumn(parsedData.yieldColumn);
                 
-                // If current selected group doesn't exist in loaded scenarios, reset to first group
+                // Reset to first group in loaded scenarios
                 const loadedGroups = [...new Set(parsedData.scenarios.map(s => s.scenario_group))];
-                if (selectedGroup && !loadedGroups.includes(selectedGroup)) {
-                    setSelectedGroup(loadedGroups.length > 0 ? loadedGroups[0] : null);
-                }
+                setSelectedGroup(loadedGroups.length > 0 ? loadedGroups[0] : null);
                 
                 alert('Data loaded successfully!');
             } catch (error) {
@@ -86,7 +84,7 @@ const App: React.FC = () => {
             }
         };
         reader.readAsText(file);
-    }, [scenarios]);
+    }, []);
     
     const handleFileDownload = useCallback(() => {
         try {
