@@ -168,7 +168,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                 return (
                                     <tr
                                         key={scenario.id}
-                                        className={`border-b cursor-pointer ${isSelected ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' : 'bg-white hover:bg-gray-50'}`}
+                                        className={`border-b cursor-pointer transition-colors ${isSelected ? 'bg-blue-100 ring-2 ring-inset ring-blue-500' : 'bg-white hover:bg-gray-50'}`}
                                         onClick={() => onSelectScenario(scenario.id)}
                                     >
                                         <td className="px-6 py-2">
