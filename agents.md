@@ -1,61 +1,150 @@
-# Expert Elicitation Application Requirements
+# Expert Elicitation Application Specification
 
-This document summarizes the requirements for the Bayesian expert elicitation web application, as specified throughout the development process.
+This document defines the comprehensive functionality and requirements for the Bayesian expert elicitation web application for ecological modeling.
 
 ## 1. Core Application Purpose
 
--   **Goal**: To build a static web application to collect expert opinion for ecological model development.
--   **Elicitation Process**: Experts are shown a series of scenarios and must supply outcome distributions for each.
--   **Distribution Types**: For each scenario, experts provide two separate distributions:
-    1.  A **Baseline** outcome.
-    2.  A **Treatment** outcome (the expected outcome after an intervention).
+**Primary Goal**: A static web application designed to systematically collect expert opinion and uncertainty quantification for ecological model development through structured elicitation processes.
 
-## 2. Distribution Definition & Interaction
+**Target Users**: Domain experts, researchers, and practitioners who need to provide probabilistic assessments of ecological outcomes under different intervention scenarios.
 
--   **Model**: Outcome distributions are modeled using a Beta distribution.
--   **User Inputs**: Experts define each distribution by providing four parameters:
-    -   `min`: The minimum possible outcome value.
-    -   `max`: The maximum possible outcome value.
-    -   `mode`: The most likely outcome value.
-    -   `confidence`: A value (1-100) indicating the expert's confidence, which controls the "peakiness" (variance) of the distribution.
+**Use Cases**:
 
-## 3. User Interface & Layout
+- Agricultural impact assessment (crop yield predictions under different treatments)
+- Environmental risk evaluation (species population responses to conservation interventions)
+- Ecosystem service valuation (quantifying benefits of restoration activities)
+- Climate change impact modeling (ecological responses to mitigation strategies)
 
-The application is structured with a clear layout to guide the user through the elicitation process.
+## 2. Elicitation Framework
 
-### 3.1. Scenario Table & Grouping
+### 2.1. Probabilistic Elicitation Model
 
--   **Layout**: The scenario table is positioned at the top of the main view and spans the full width of the page.
--   **Display**: The table has a fixed height, showing approximately 5 rows, with a vertical scrollbar to navigate longer lists of scenarios.
--   **Scenario Groups**:
-    -   Scenarios are categorized by a `scenario_group` property.
-    -   A tabbed interface allows users to select a group, filtering the table to show only scenarios belonging to that group.
--   **Interaction**: Users can select a scenario by clicking its row. The selected row is highlighted.
+- **Distribution Type**: Beta distributions model outcome uncertainties, ideal for bounded percentage-based outcomes (0-100%)
+- **Dual Outcome Structure**: Each scenario requires assessment of two related probability distributions:
+  1. **Baseline Distribution**: Expected outcomes without any intervention
+  2. **Treatment Distribution**: Expected outcomes after applying a specific intervention
+- **Comparative Analysis**: Treatment outcomes are constrained to be equal to or better than baseline outcomes (treatment ≤ baseline for damage/loss scenarios)
 
-### 3.2. Interactive Distribution Chart
+### 2.2. Expert Input Parameters
 
--   **Functionality**: A primary interactive chart displays the Beta distribution curves for the selected scenario.
--   **Real-time Updates**: The distribution curve updates instantly and smoothly as its parameters are changed.
--   **Draggable Handles**:
-    -   The `min`, `mode`, and `max` parameters are represented by large, clearly identifiable draggable points on the chart.
-    -   These handles are positioned directly on the x-axis for intuitive manipulation.
--   **Axis Configuration**:
-    -   **X-Axis**: Represents the "Outcome Value", fixed domain of 0-100.
-    -   **Y-Axis**: Represents "Probability Density", with a fixed domain of 0 to 0.4. Any part of the distribution curve exceeding 0.4 is visually clipped.
--   **Contextual Display**:
-    -   The chart displays the editable "Baseline" (blue) and "Treatment" (green) distributions for the currently selected scenario.
-    -   Distributions from all *other* scenarios within the *currently selected group* are shown as faded lines in the background for comparison.
-    -   When the user switches to a new scenario group via the tabs, the chart is cleared and refreshed to show data only for the new group.
+Each distribution is defined through four intuitive parameters:
 
-### 3.3. Distribution Parameters Panel
+- **Minimum Value**: The lowest possible outcome (best-case scenario)
+- **Maximum Value**: The highest possible outcome (worst-case scenario)  
+- **Mode**: The most likely outcome (expert's best estimate)
+- **Confidence**: Certainty level (1-100) controlling distribution shape (higher values = more peaked/certain)
 
--   **Functionality**: A dedicated panel displays the precise numerical values for `min`, `mode`, `max`, and `confidence` for both the baseline and treatment distributions of the active scenario.
--   **Manual Input**: This panel allows experts to type values directly into number inputs, providing an alternative to dragging handles on the chart for fine-grained control.
--   **Two-Way Binding**: The chart and the input panel are fully synchronized. Modifying a value in one immediately updates the other.
+## 3. Dynamic Data Architecture
 
-## 4. Session Management (Data Persistence)
+### 3.1. Flexible Scenario Structure
 
--   **Static Nature**: The application is a static webpage with no backend.
--   **Download Results**: Users can download their complete set of elicited distributions at any time. The data is saved as a `results.csv` file.
--   **Upload Session**: Users can upload a previously downloaded CSV file to restore their session, allowing them to pause and continue their work across multiple sessions.
--   **CSV Format**: The CSV file contains one row per scenario, including all original scenario data plus additional columns for the user-defined distribution parameters (`baseline_min`, `baseline_max`, etc., and `treatment_min`, `treatment_max`, etc.).
+- **Dynamic Schema**: Scenarios can contain arbitrary attributes beyond required core fields
+- **Required Fields**: `scenario_id` (unique identifier) and `scenario_group` (categorization)
+- **Reserved Fields**: Distribution parameters (`baseline_min`, `baseline_max`, `baseline_mode`, `baseline_confidence`, `treatment_min`, `treatment_max`, `treatment_mode`, `treatment_confidence`)
+- **Custom Attributes**: All other columns become scenario descriptors (location, crop type, environmental conditions, etc.)
+
+### 3.2. Intelligent Yield Detection
+
+- **Pattern Recognition**: Automatically identifies yield/production columns using regex pattern matching (`/yield/i`)
+- **Flexible Naming**: Supports various naming conventions ("Total Yield", "Yield (t/ha)", "Expected Yield Production", etc.)
+- **Impact Calculations**: Dynamically calculates tonnage impacts based on detected yield values and loss percentages
+
+## 4. User Interface Design
+
+### 4.1. Scenario Management Interface
+
+- **Dynamic Table Rendering**: Automatically generates table columns based on uploaded scenario structure
+- **Group-Based Navigation**: Tabbed interface for filtering scenarios by category
+- **Completion Tracking**: Visual indicators showing which scenarios have user-provided distributions vs. default values
+- **Interactive Operations**:
+  - Row selection for scenario focus
+  - Scenario duplication for creating similar cases
+  - Scenario deletion with confirmation
+  - Real-time completion status updates
+
+### 4.2. Distribution Visualization System
+
+- **Interactive Chart Display**: Real-time Beta distribution curves with smooth parameter updates
+- **Multi-Layer Visualization**:
+  - Active distributions (baseline in blue, treatment in green) with full interactivity
+  - Background distributions from other scenarios in the same group (faded for context)
+  - Group-specific filtering for relevant comparisons
+- **Direct Manipulation**: Draggable handles on chart for intuitive parameter adjustment
+- **Axis Configuration**: Fixed scales (X: 0-100%, Y: 0-0.4 density) with visual clipping for extreme distributions
+
+### 4.3. Parameter Input Interface
+
+- **Dual Input Methods**:
+  - Direct numerical input fields with validation
+  - Interactive chart manipulation
+  - Real-time synchronization between methods
+- **Smart Defaults System**:
+  - Blank input fields show placeholder values for defaults
+  - User entries override defaults and are tracked separately
+  - Clear visual distinction between default and user-specified parameters
+- **Constraint Enforcement**: Automatic validation ensuring treatment values don't exceed baseline values
+- **Yield Impact Display**: Real-time tonnage calculations displayed alongside percentage inputs
+
+## 5. Completion Tracking & State Management
+
+### 5.1. User Progress Monitoring
+
+- **Granular State Tracking**: Distinguishes between default parameters and user-modified values
+- **Completion Indicators**: Visual status markers in scenario table showing elicitation progress
+- **Flexible Data Model**: Nullable value system allowing partial completion and incremental progress
+- **Session Continuity**: Preservation of exact user state across sessions
+
+### 5.2. Default Value Handling
+
+- **Intelligent Defaults**: System-provided baseline parameters for immediate visualization
+- **Override Tracking**: Clear separation between system defaults and user inputs
+- **Visual Clarity**: Empty input fields with placeholder hints for default values
+- **Chart Integration**: Distributions render using defaults even when parameters are blank
+
+## 6. Data Persistence & Portability
+
+### 6.1. Session Management
+
+- **Stateless Architecture**: No backend dependencies, purely client-side operation
+- **File-Based Persistence**: Complete session state saved as CSV files
+- **Session Restoration**: Upload previously saved files to continue work
+- **Data Integrity**: Preservation of exact user state including blank vs. specified parameters
+
+### 6.2. Dynamic CSV Processing
+
+- **Flexible Import**: Accepts CSV files with arbitrary column structures
+- **Validation Framework**: Comprehensive error handling for missing required fields
+- **Schema Detection**: Automatic identification of scenario attributes and yield columns
+- **Export Fidelity**: CSV output exactly reflects user input state (blanks remain blank, values remain values)
+
+## 7. Error Handling & Validation
+
+### 7.1. Input Validation
+
+- **Required Field Enforcement**: Clear error messages for missing `scenario_id` or `scenario_group`
+- **Data Type Validation**: Automatic parsing and validation of numeric vs. text fields
+- **Constraint Checking**: Real-time validation of parameter relationships and bounds
+- **User Feedback**: Informative error messages with specific guidance for resolution
+
+### 7.2. Robust Processing
+
+- **Graceful Degradation**: System continues functioning with partial data
+- **Format Flexibility**: Handles various CSV formats and column arrangements
+- **Recovery Mechanisms**: Clear pathways for correcting invalid inputs
+- **State Preservation**: No loss of valid data when errors occur
+
+## 8. Technical Requirements
+
+### 8.1. Performance & Usability
+
+- **Real-Time Responsiveness**: Instant updates across all interface elements
+- **Smooth Interactions**: Fluid animations and transitions for parameter changes
+- **Scalable Display**: Efficient rendering of multiple distributions and large scenario sets
+- **Cross-Platform Compatibility**: Consistent behavior across different devices and browsers
+
+### 8.2. Data Format Standards
+
+- **CSV Compliance**: Standard comma-separated value format for maximum compatibility
+- **Unicode Support**: Proper handling of international characters and symbols
+- **Numeric Precision**: Appropriate decimal precision for scientific applications
+- **Metadata Preservation**: Retention of all original scenario information through processing cycles

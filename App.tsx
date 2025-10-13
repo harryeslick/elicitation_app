@@ -1,14 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { ControlPanel } from './components/ControlPanel';
-import { D3DistributionChart } from './components/D3DistributionChart';
-import { DistributionInputs } from './components/DistributionInputs';
+
 import { ScenarioEditModal } from './components/ScenarioEditModal';
 import { ScenarioTable } from './components/ScenarioTable';
 import { INITIAL_SCENARIOS } from './constants';
 import { generateCSV, parseCSV, ParsedCSVData } from './services/csvUtils';
-import { getEmptyUserScenario, hasScenarioUserEdits, userScenarioToScenario } from './services/distributionUtils';
-import { ElicitationData, Scenario, ScenarioDistribution, UserDistribution, UserElicitationData, UserScenarioDistribution } from './types';
+import { getEmptyUserScenario, hasScenarioUserEdits } from './services/distributionUtils';
+import { Scenario, UserDistribution, UserElicitationData } from './types';
 
 const App: React.FC = () => {
     const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
@@ -162,20 +161,7 @@ const App: React.FC = () => {
         setSelectedScenarioId(scenario.id);
     }, []);
 
-    const currentUserDistribution = useMemo<UserScenarioDistribution | undefined>(() => {
-        if (!selectedScenarioId) return undefined;
-        return userElicitationData[selectedScenarioId] || getEmptyUserScenario();
-    }, [selectedScenarioId, userElicitationData]);
 
-    const currentDistribution = useMemo<ScenarioDistribution | undefined>(() => {
-        if (!currentUserDistribution) return undefined;
-        return userScenarioToScenario(currentUserDistribution);
-    }, [currentUserDistribution]);
-
-    const currentScenario = useMemo(() => {
-        if (!selectedScenarioId) return undefined;
-        return scenarios.find(s => s.id === selectedScenarioId);
-    }, [selectedScenarioId, scenarios]);
 
     // Check completion status for scenarios
     const scenarioCompletionStatus = useMemo(() => {
@@ -186,17 +172,6 @@ const App: React.FC = () => {
         }
         return status;
     }, [scenarios, userElicitationData]);
-
-    const dataForChart = useMemo(() => {
-        const scenarioIdsInGroup = new Set(scenariosInGroup.map(s => s.id));
-        const filteredData: ElicitationData = {};
-        for (const scenarioId in userElicitationData) {
-            if (scenarioIdsInGroup.has(scenarioId)) {
-                filteredData[scenarioId] = userScenarioToScenario(userElicitationData[scenarioId]);
-            }
-        }
-        return filteredData;
-    }, [userElicitationData, scenariosInGroup]);
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-800 p-4 sm:p-6 lg:p-8">
@@ -226,44 +201,17 @@ const App: React.FC = () => {
                         selectedGroup={selectedGroup}
                         selectedScenarioId={selectedScenarioId}
                         completionStatus={scenarioCompletionStatus}
+                        userElicitationData={userElicitationData}
+                        yieldColumn={yieldColumn}
                         onSelectScenario={handleSelectScenario}
                         onSelectGroup={handleSelectGroup}
                         onAddScenario={handleAddScenario}
                         onDeleteScenario={handleDeleteScenario}
+                        onDistributionChange={handleDistributionChange}
                     />
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="space-y-8">
-                           <ControlPanel onUpload={handleFileUpload} onDownload={handleFileDownload} />
-                            {selectedScenarioId && (
-                                <DistributionInputs
-                                    scenarioId={selectedScenarioId}
-                                    userDistribution={currentUserDistribution}
-                                    scenario={currentScenario}
-                                    yieldColumn={yieldColumn}
-                                    onDistributionChange={handleDistributionChange}
-                                />
-                            )}
-                        </div>
-                        
-                        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-lg shadow-md border border-gray-200 min-h-[500px]">
-                            {selectedScenarioId && (
-                               <D3DistributionChart
-                                    key={selectedScenarioId} // Force re-render on scenario change
-                                    scenarioId={selectedScenarioId}
-                                    allData={dataForChart}
-                                    onDistributionChange={handleDistributionChange}
-                                    selectedDistribution={currentDistribution}
-                                    currentScenario={currentScenario}
-                                    yieldColumn={yieldColumn}
-                               />
-                            )}
-                            {!selectedScenarioId && (
-                                <div className="flex items-center justify-center h-full">
-                                    <p className="text-gray-500">Select a scenario to begin.</p>
-                                </div>
-                            )}
-                        </div>
+                    <div className="mt-6">
+                        <ControlPanel onUpload={handleFileUpload} onDownload={handleFileDownload} />
                     </div>
                 </main>
             </div>
