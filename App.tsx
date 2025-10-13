@@ -226,6 +226,7 @@ const App: React.FC = () => {
                         selectedGroup={selectedGroup}
                         selectedScenarioId={selectedScenarioId}
                         completionStatus={scenarioCompletionStatus}
+                        userElicitationData={userElicitationData}
                         onSelectScenario={handleSelectScenario}
                         onSelectGroup={handleSelectGroup}
                         onAddScenario={handleAddScenario}
