@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DEFAULT_BASELINE, DEFAULT_TREATMENT } from '../services/distributionUtils';
 import { Scenario, UserDistribution, UserElicitationData } from '../types';
 import { Tooltip } from './Tooltip';
+import { TripleHandleSlider } from './TripleHandleSlider';
 
 // Tooltips based on your YAML configuration
 const TOOLTIPS: { [key: string]: string } = {
@@ -13,6 +14,10 @@ const TOOLTIPS: { [key: string]: string } = {
     'Baseline Distribution': 'Distribution parameters for expected outcomes WITHOUT any treatment intervention. Represents the range of possible damage/loss percentages under baseline conditions.',
     'Treatment Distribution': 'Distribution parameters for expected outcomes AFTER applying treatment intervention. Values should be equal to or better than baseline (≤ baseline for damage scenarios).',
     'Distribution Parameters': 'Combined baseline and treatment distribution parameters. Baseline represents outcomes without intervention, treatment represents outcomes after applying intervention. Treatment values should be ≤ baseline values.',
+    'Min': 'Minimum possible value - the best-case scenario or lowest expected outcome',
+    'Mode': 'Most likely value - the peak or most probable outcome of the distribution',
+    'Max': 'Maximum possible value - the worst-case scenario or highest expected outcome',
+    'Confidence': 'Certainty level (1-100) - higher values create a more peaked distribution around the mode, indicating greater confidence in the estimates',
     'Actions': 'Available actions for this scenario including duplicate and delete options',
     'ACTIONS': 'Total expected yield for the entire field (tonnes)',
     'Yield (t)': 'Total expected yield for the entire field (tonnes)',
@@ -155,6 +160,26 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
         onDistributionChange(scenarioId, type, newUserDistribution);
     };
 
+    const handleTripleSliderChange = (scenarioId: string, type: 'baseline' | 'treatment', values: { min: number; mode: number; max: number }) => {
+        const currentUserDist = userElicitationData[scenarioId] || { 
+            baseline: { min: null, max: null, mode: null, confidence: null }, 
+            treatment: { min: null, max: null, mode: null, confidence: null } 
+        };
+        
+        const defaults = type === 'baseline' ? DEFAULT_BASELINE : DEFAULT_TREATMENT;
+        const currentConfidence = currentUserDist[type].confidence ?? defaults.confidence;
+
+        // Convert back to UserDistribution (set to null if matches defaults)
+        const newUserDistribution: UserDistribution = {
+            min: values.min === defaults.min ? null : values.min,
+            max: values.max === defaults.max ? null : values.max,
+            mode: values.mode === defaults.mode ? null : values.mode,
+            confidence: currentConfidence === defaults.confidence ? null : currentConfidence,
+        };
+
+        onDistributionChange(scenarioId, type, newUserDistribution);
+    };
+
     const handleDuplicateScenario = (scenario: Scenario) => {
         onAddScenario(scenario);
     };
@@ -189,7 +214,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
            
             <div className="mt-4 overflow-x-auto max-h-[600px] overflow-y-auto border rounded-md">
                 <table className="w-full text-sm text-left text-gray-500">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
                         <tr>
                             <th scope="col" className="px-4 py-3 w-16">
                                 <Tooltip text={tooltipsLoaded ? getTooltipText('Status') : null}>
@@ -203,9 +228,14 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                     </Tooltip>
                                 </th>
                             ))}
-                            <th scope="col" className="px-4 py-3 w-96">
+                            <th scope="col" className="px-4 py-3 w-80">
                                 <Tooltip text={tooltipsLoaded ? getTooltipText('Distribution Parameters') : null}>
                                     Distribution Parameters
+                                </Tooltip>
+                            </th>
+                            <th scope="col" className="px-4 py-3 w-20">
+                                <Tooltip text={tooltipsLoaded ? getTooltipText('Confidence') : null}>
+                                    Confidence
                                 </Tooltip>
                             </th>
                             <th scope="col" className="px-4 py-3 w-32">
@@ -256,184 +286,149 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                         ))}
                                         
                         
-                        {/* Combined Distribution Parameters Column */}
+                        {/* Distribution Parameters Column (without confidence) */}
                         <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                             <div className="space-y-4">
                                 {/* Baseline Distribution */}
-                                <div className="space-y-2">
+                                <div className={`space-y-2 ${!isSelected ? 'opacity-50 pointer-events-none' : ''}`}>
                                     <div className="text-xs font-semibold text-blue-600 mb-2">BASELINE</div>
-                                    
-                                    <div className="grid grid-cols-4 gap-2 text-xs">
-                                        {(['min', 'mode', 'max'] as const).map((field) => {
-                                            const value = userDist.baseline[field] ?? DEFAULT_BASELINE[field];
-                                            return (
-                                                <div key={field} className="space-y-1">
-                                                    <label className="block text-gray-700 capitalize">{field}</label>
-                                                    <input
-                                                        type="range"
-                                                        min="0"
-                                                        max="100"
-                                                        value={value}
-                                                        disabled={!isSelected}
-                                                        onChange={(e) => {
-                                                            if (isSelected) {
-                                                                handleDistributionChange(scenario.id, 'baseline', field, Number(e.target.value));
-                                                            }
-                                                        }}
-                                                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                                                            isSelected 
-                                                                ? 'bg-gray-200 accent-blue-500' 
-                                                                : isCompleted 
-                                                                    ? 'bg-gray-100 accent-blue-400 opacity-75' 
-                                                                    : 'bg-gray-50 accent-gray-300 opacity-30'
-                                                        }`}
-                                                    />
-                                                    <div className="flex justify-between items-center">
-                                                        <span className={`font-medium ${
-                                                            isSelected 
-                                                                ? 'text-blue-600' 
-                                                                : isCompleted 
-                                                                    ? 'text-blue-500 opacity-75' 
-                                                                    : 'text-gray-400 opacity-50'
-                                                        }`}>{Math.round(value)}%</span>
-                                                        {baselineYield && (
-                                                            <span className={`text-xs ${
-                                                                isSelected 
-                                                                    ? 'text-blue-500' 
-                                                                    : isCompleted 
-                                                                        ? 'text-blue-400 opacity-75' 
-                                                                        : 'text-gray-400 opacity-50'
-                                                            }`}>
-                                                                {calculateYieldImpact(value, baselineYield).toFixed(1)}t
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        
-                                        {/* Confidence as 4th column */}
-                                        <div className="space-y-1">
-                                            <label className="block text-gray-700 text-xs">Confidence</label>
-                                            <input 
-                                                type="range" 
-                                                min="1" 
-                                                max="100" 
-                                                value={userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
-                                                disabled={!isSelected}
-                                                onChange={(e) => {
-                                                    if (isSelected) {
-                                                        handleDistributionChange(scenario.id, 'baseline', 'confidence', Number(e.target.value));
-                                                    }
-                                                }}
-                                                className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                                                    isSelected 
-                                                        ? 'bg-gray-200 accent-blue-500' 
-                                                        : isCompleted 
-                                                            ? 'bg-gray-100 accent-blue-400 opacity-75' 
-                                                            : 'bg-gray-50 accent-gray-300 opacity-30'
-                                                }`}
-                                            />
-                                            <span className={`font-medium text-xs ${
-                                                isSelected 
-                                                    ? 'text-blue-600' 
-                                                    : isCompleted 
-                                                        ? 'text-blue-500 opacity-75' 
-                                                        : 'text-gray-400 opacity-50'
-                                            }`}>
-                                                {userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
-                                            </span>
-                                        </div>
-                                    </div>
+                                    <TripleHandleSlider
+                                        min={userDist.baseline.min ?? DEFAULT_BASELINE.min}
+                                        mode={userDist.baseline.mode ?? DEFAULT_BASELINE.mode}
+                                        max={userDist.baseline.max ?? DEFAULT_BASELINE.max}
+                                        minBound={0}
+                                        maxBound={100}
+                                        disabled={!isSelected}
+                                        color="blue"
+                                        onChange={(values) => {
+                                            handleTripleSliderChange(scenario.id, 'baseline', values);
+                                            // If baseline changes and treatment exceeds it, adjust treatment
+                                            const treatmentMin = userDist.treatment.min ?? DEFAULT_TREATMENT.min;
+                                            const treatmentMode = userDist.treatment.mode ?? DEFAULT_TREATMENT.mode;
+                                            const treatmentMax = userDist.treatment.max ?? DEFAULT_TREATMENT.max;
+                                            
+                                            if (treatmentMin > values.min || treatmentMode > values.mode || treatmentMax > values.max) {
+                                                handleTripleSliderChange(scenario.id, 'treatment', {
+                                                    min: Math.min(treatmentMin, values.min),
+                                                    mode: Math.min(treatmentMode, values.mode),
+                                                    max: Math.min(treatmentMax, values.max)
+                                                });
+                                            }
+                                        }}
+                                        yieldValue={baselineYield}
+                                    />
                                 </div>
 
                                 {/* Treatment Distribution */}
-                                <div className="space-y-2">
+                                <div className={`space-y-2 ${!isSelected ? 'opacity-50 pointer-events-none' : ''}`}>
                                     <div className="text-xs font-semibold text-green-600 mb-2">TREATMENT</div>
-                                    
-                                    <div className="grid grid-cols-4 gap-2 text-xs">
-                                        {(['min', 'mode', 'max'] as const).map((field) => {
-                                            const value = userDist.treatment[field] ?? DEFAULT_TREATMENT[field];
-                                            const baselineValue = userDist.baseline[field] ?? DEFAULT_BASELINE[field];
-                                            return (
-                                                <div key={field} className="space-y-1">
-                                                    <label className="block text-gray-700 capitalize">{field}</label>
-                                                    <input
-                                                        type="range"
-                                                        min="0"
-                                                        max={Math.min(100, baselineValue)}
-                                                        value={value}
-                                                        disabled={!isSelected}
-                                                        onChange={(e) => {
-                                                            if (isSelected) {
-                                                                handleDistributionChange(scenario.id, 'treatment', field, Number(e.target.value));
-                                                            }
-                                                        }}
-                                                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                                                            isSelected 
-                                                                ? 'bg-gray-200 accent-green-500' 
-                                                                : isCompleted 
-                                                                    ? 'bg-gray-100 accent-green-400 opacity-75' 
-                                                                    : 'bg-gray-50 accent-gray-300 opacity-30'
-                                                        }`}
-                                                    />
-                                                    <div className="flex justify-between items-center">
-                                                        <span className={`font-medium ${
-                                                            isSelected 
-                                                                ? 'text-green-600' 
-                                                                : isCompleted 
-                                                                    ? 'text-green-500 opacity-75' 
-                                                                    : 'text-gray-400 opacity-50'
-                                                        }`}>{Math.round(value)}%</span>
-                                                        {baselineYield && (
-                                                            <span className={`text-xs ${
-                                                                isSelected 
-                                                                    ? 'text-green-500' 
-                                                                    : isCompleted 
-                                                                        ? 'text-green-400 opacity-75' 
-                                                                        : 'text-gray-400 opacity-50'
-                                                            }`}>
-                                                                {calculateYieldImpact(value, baselineYield).toFixed(1)}t
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        
-                                        {/* Confidence as 4th column */}
-                                        <div className="space-y-1">
-                                            <label className="block text-gray-700 text-xs">Confidence</label>
-                                            <input 
-                                                type="range" 
-                                                min="1" 
-                                                max="100" 
-                                                value={userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
-                                                disabled={!isSelected}
-                                                onChange={(e) => {
-                                                    if (isSelected) {
-                                                        handleDistributionChange(scenario.id, 'treatment', 'confidence', Number(e.target.value));
-                                                    }
-                                                }}
-                                                className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                                                    isSelected 
-                                                        ? 'bg-gray-200 accent-green-500' 
-                                                        : isCompleted 
-                                                            ? 'bg-gray-100 accent-green-400 opacity-75' 
-                                                            : 'bg-gray-50 accent-gray-300 opacity-30'
-                                                }`}
-                                            />
-                                            <span className={`font-medium text-xs ${
+                                    <TripleHandleSlider
+                                        min={userDist.treatment.min ?? DEFAULT_TREATMENT.min}
+                                        mode={userDist.treatment.mode ?? DEFAULT_TREATMENT.mode}
+                                        max={userDist.treatment.max ?? DEFAULT_TREATMENT.max}
+                                        minBound={0}
+                                        maxBound={100}
+                                        disabled={!isSelected}
+                                        color="green"
+                                        onChange={(values) => {
+                                            // Ensure treatment values don't exceed baseline values
+                                            const baselineMin = userDist.baseline.min ?? DEFAULT_BASELINE.min;
+                                            const baselineMode = userDist.baseline.mode ?? DEFAULT_BASELINE.mode;
+                                            const baselineMax = userDist.baseline.max ?? DEFAULT_BASELINE.max;
+                                            
+                                            const constrainedValues = {
+                                                min: Math.min(values.min, baselineMin),
+                                                mode: Math.min(values.mode, baselineMode),
+                                                max: Math.min(values.max, baselineMax)
+                                            };
+                                            
+                                            handleTripleSliderChange(scenario.id, 'treatment', constrainedValues);
+                                        }}
+                                        yieldValue={baselineYield}
+                                    />
+                                </div>
+                            </div>
+                        </td>
+
+                        {/* Separate Confidence Column */}
+                        <td className="px-2 py-4" onClick={(e) => e.stopPropagation()}>
+                            <div className={`flex flex-col items-center space-y-3 h-full ${!isSelected ? 'opacity-50 pointer-events-none' : ''}`}>
+                                {/* Baseline Confidence */}
+                                <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
+                                        <input 
+                                            type="range" 
+                                            min="50" 
+                                            max="100" 
+                                            value={userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
+                                            disabled={!isSelected}
+                                            onChange={(e) => {
+                                                if (isSelected) {
+                                                    handleDistributionChange(scenario.id, 'baseline', 'confidence', Number(e.target.value));
+                                                }
+                                            }}
+                                            className={`h-2 rounded-lg appearance-none cursor-pointer ${
                                                 isSelected 
-                                                    ? 'text-green-600' 
+                                                    ? 'bg-gray-200 accent-blue-500' 
                                                     : isCompleted 
-                                                        ? 'text-green-500 opacity-75' 
-                                                        : 'text-gray-400 opacity-50'
-                                            }`}>
-                                                {userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
-                                            </span>
-                                        </div>
+                                                        ? 'bg-gray-100 accent-blue-400 opacity-75' 
+                                                        : 'bg-gray-50 accent-gray-300 opacity-30'
+                                            }`}
+                                            style={{ 
+                                                width: '80px',
+                                                transform: 'rotate(-90deg)',
+                                                transformOrigin: 'center center'
+                                            }}
+                                        />
                                     </div>
+                                    <span className={`text-xs font-medium ${
+                                        isSelected 
+                                            ? 'text-blue-600' 
+                                            : isCompleted 
+                                                ? 'text-blue-500 opacity-75' 
+                                                : 'text-gray-400 opacity-50'
+                                    }`}>
+                                        {userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
+                                    </span>
+                                </div>
+
+                                {/* Treatment Confidence */}
+                                <div className="flex items-center gap-1">
+                                    <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
+                                        <input 
+                                            type="range" 
+                                            min="50" 
+                                            max="100" 
+                                            value={userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
+                                            disabled={!isSelected}
+                                            onChange={(e) => {
+                                                if (isSelected) {
+                                                    handleDistributionChange(scenario.id, 'treatment', 'confidence', Number(e.target.value));
+                                                }
+                                            }}
+                                            className={`h-2 rounded-lg appearance-none cursor-pointer ${
+                                                isSelected 
+                                                    ? 'bg-gray-200 accent-green-500' 
+                                                    : isCompleted 
+                                                        ? 'bg-gray-100 accent-green-400 opacity-75' 
+                                                        : 'bg-gray-50 accent-gray-300 opacity-30'
+                                            }`}
+                                            style={{ 
+                                                width: '80px',
+                                                transform: 'rotate(-90deg)',
+                                                transformOrigin: 'center center'
+                                            }}
+                                        />
+                                    </div>
+                                    <span className={`text-xs font-medium ${
+                                        isSelected 
+                                            ? 'text-green-600' 
+                                            : isCompleted 
+                                                ? 'text-green-500 opacity-75' 
+                                                : 'text-gray-400 opacity-50'
+                                    }`}>
+                                        {userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
+                                    </span>
                                 </div>
                             </div>
                         </td>                                        <td className="px-4 py-4">
@@ -466,7 +461,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                         })
                         ) : (
                             <tr>
-                                <td colSpan={headers.length + 3} className="text-center py-4 text-gray-500">
+                                <td colSpan={headers.length + 4} className="text-center py-4 text-gray-500">
                                     No scenarios in this group.
                                 </td>
                             </tr>
