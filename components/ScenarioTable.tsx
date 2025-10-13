@@ -12,6 +12,7 @@ const TOOLTIPS: { [key: string]: string } = {
     'BASELINE DISTRIBUTION': 'Expected yield per hectare under normal conditions (tonnes per hectare)',
     'Baseline Distribution': 'Distribution parameters for expected outcomes WITHOUT any treatment intervention. Represents the range of possible damage/loss percentages under baseline conditions.',
     'Treatment Distribution': 'Distribution parameters for expected outcomes AFTER applying treatment intervention. Values should be equal to or better than baseline (≤ baseline for damage scenarios).',
+    'Distribution Parameters': 'Combined baseline and treatment distribution parameters. Baseline represents outcomes without intervention, treatment represents outcomes after applying intervention. Treatment values should be ≤ baseline values.',
     'Actions': 'Available actions for this scenario including duplicate and delete options',
     'ACTIONS': 'Total expected yield for the entire field (tonnes)',
     'Yield (t)': 'Total expected yield for the entire field (tonnes)',
@@ -202,14 +203,9 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                     </Tooltip>
                                 </th>
                             ))}
-                            <th scope="col" className="px-4 py-3 w-80">
-                                <Tooltip text={tooltipsLoaded ? getTooltipText('Baseline Distribution') : null}>
-                                    Baseline Distribution
-                                </Tooltip>
-                            </th>
-                            <th scope="col" className="px-4 py-3 w-80">
-                                <Tooltip text={tooltipsLoaded ? getTooltipText('Treatment Distribution') : null}>
-                                    Treatment Distribution
+                            <th scope="col" className="px-4 py-3 w-96">
+                                <Tooltip text={tooltipsLoaded ? getTooltipText('Distribution Parameters') : null}>
+                                    Distribution Parameters
                                 </Tooltip>
                             </th>
                             <th scope="col" className="px-4 py-3 w-32">
@@ -259,72 +255,29 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                             </td>
                                         ))}
                                         
-                                        {/* Baseline Distribution Column */}
-                                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                                            <div className="space-y-2">
-                                                <div className="text-xs font-semibold text-blue-600 mb-2">BASELINE</div>
-                                                
-                                                <div className="grid grid-cols-3 gap-2 text-xs">
-                                                    {(['min', 'mode', 'max'] as const).map((field) => {
-                                                        const value = userDist.baseline[field] ?? DEFAULT_BASELINE[field];
-                                                        return (
-                                                            <div key={field} className="space-y-1">
-                                                                <label className="block text-gray-700 capitalize">{field}</label>
-                                                                <input
-                                                                    type="range"
-                                                                    min="0"
-                                                                    max="100"
-                                                                    value={value}
-                                                                    disabled={!isSelected}
-                                                                    onChange={(e) => {
-                                                                        if (isSelected) {
-                                                                            handleDistributionChange(scenario.id, 'baseline', field, Number(e.target.value));
-                                                                        }
-                                                                    }}
-                                                                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                                                                        isSelected 
-                                                                            ? 'bg-gray-200 accent-blue-500' 
-                                                                            : isCompleted 
-                                                                                ? 'bg-gray-100 accent-blue-400 opacity-75' 
-                                                                                : 'bg-gray-50 accent-gray-300 opacity-30'
-                                                                    }`}
-                                                                />
-                                                                <div className="flex justify-between items-center">
-                                                                    <span className={`font-medium ${
-                                                                        isSelected 
-                                                                            ? 'text-blue-600' 
-                                                                            : isCompleted 
-                                                                                ? 'text-blue-500 opacity-75' 
-                                                                                : 'text-gray-400 opacity-50'
-                                                                    }`}>{Math.round(value)}%</span>
-                                                                    {baselineYield && (
-                                                                        <span className={`text-xs ${
-                                                                            isSelected 
-                                                                                ? 'text-blue-500' 
-                                                                                : isCompleted 
-                                                                                    ? 'text-blue-400 opacity-75' 
-                                                                                    : 'text-gray-400 opacity-50'
-                                                                        }`}>
-                                                                            {calculateYieldImpact(value, baselineYield).toFixed(1)}t
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                                
-                                                <div className="mt-2">
-                                                    <label className="block text-gray-700 text-xs">Confidence</label>
-                                                    <input 
-                                                        type="range" 
-                                                        min="1" 
-                                                        max="100" 
-                                                        value={userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
+                        
+                        {/* Combined Distribution Parameters Column */}
+                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                            <div className="space-y-4">
+                                {/* Baseline Distribution */}
+                                <div className="space-y-2">
+                                    <div className="text-xs font-semibold text-blue-600 mb-2">BASELINE</div>
+                                    
+                                    <div className="grid grid-cols-4 gap-2 text-xs">
+                                        {(['min', 'mode', 'max'] as const).map((field) => {
+                                            const value = userDist.baseline[field] ?? DEFAULT_BASELINE[field];
+                                            return (
+                                                <div key={field} className="space-y-1">
+                                                    <label className="block text-gray-700 capitalize">{field}</label>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        value={value}
                                                         disabled={!isSelected}
                                                         onChange={(e) => {
                                                             if (isSelected) {
-                                                                handleDistributionChange(scenario.id, 'baseline', 'confidence', Number(e.target.value));
+                                                                handleDistributionChange(scenario.id, 'baseline', field, Number(e.target.value));
                                                             }
                                                         }}
                                                         className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
@@ -335,86 +288,85 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                                                     : 'bg-gray-50 accent-gray-300 opacity-30'
                                                         }`}
                                                     />
-                                                    <span className={`font-medium text-xs ${
-                                                        isSelected 
-                                                            ? 'text-blue-600' 
-                                                            : isCompleted 
-                                                                ? 'text-blue-500 opacity-75' 
-                                                                : 'text-gray-400 opacity-50'
-                                                    }`}>
-                                                        {userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
-                                                    </span>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className={`font-medium ${
+                                                            isSelected 
+                                                                ? 'text-blue-600' 
+                                                                : isCompleted 
+                                                                    ? 'text-blue-500 opacity-75' 
+                                                                    : 'text-gray-400 opacity-50'
+                                                        }`}>{Math.round(value)}%</span>
+                                                        {baselineYield && (
+                                                            <span className={`text-xs ${
+                                                                isSelected 
+                                                                    ? 'text-blue-500' 
+                                                                    : isCompleted 
+                                                                        ? 'text-blue-400 opacity-75' 
+                                                                        : 'text-gray-400 opacity-50'
+                                                            }`}>
+                                                                {calculateYieldImpact(value, baselineYield).toFixed(1)}t
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
+                                            );
+                                        })}
+                                        
+                                        {/* Confidence as 4th column */}
+                                        <div className="space-y-1">
+                                            <label className="block text-gray-700 text-xs">Confidence</label>
+                                            <input 
+                                                type="range" 
+                                                min="1" 
+                                                max="100" 
+                                                value={userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
+                                                disabled={!isSelected}
+                                                onChange={(e) => {
+                                                    if (isSelected) {
+                                                        handleDistributionChange(scenario.id, 'baseline', 'confidence', Number(e.target.value));
+                                                    }
+                                                }}
+                                                className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                                                    isSelected 
+                                                        ? 'bg-gray-200 accent-blue-500' 
+                                                        : isCompleted 
+                                                            ? 'bg-gray-100 accent-blue-400 opacity-75' 
+                                                            : 'bg-gray-50 accent-gray-300 opacity-30'
+                                                }`}
+                                            />
+                                            <span className={`font-medium text-xs ${
+                                                isSelected 
+                                                    ? 'text-blue-600' 
+                                                    : isCompleted 
+                                                        ? 'text-blue-500 opacity-75' 
+                                                        : 'text-gray-400 opacity-50'
+                                            }`}>
+                                                {userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                        {/* Treatment Distribution Column */}
-                                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                                            <div className="space-y-2">
-                                                <div className="text-xs font-semibold text-green-600 mb-2">TREATMENT</div>
-                                                
-                                                <div className="grid grid-cols-3 gap-2 text-xs">
-                                                    {(['min', 'mode', 'max'] as const).map((field) => {
-                                                        const value = userDist.treatment[field] ?? DEFAULT_TREATMENT[field];
-                                                        const baselineValue = userDist.baseline[field] ?? DEFAULT_BASELINE[field];
-                                                        return (
-                                                            <div key={field} className="space-y-1">
-                                                                <label className="block text-gray-700 capitalize">{field}</label>
-                                                                <input
-                                                                    type="range"
-                                                                    min="0"
-                                                                    max={Math.min(100, baselineValue)}
-                                                                    value={value}
-                                                                    disabled={!isSelected}
-                                                                    onChange={(e) => {
-                                                                        if (isSelected) {
-                                                                            handleDistributionChange(scenario.id, 'treatment', field, Number(e.target.value));
-                                                                        }
-                                                                    }}
-                                                                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                                                                        isSelected 
-                                                                            ? 'bg-gray-200 accent-green-500' 
-                                                                            : isCompleted 
-                                                                                ? 'bg-gray-100 accent-green-400 opacity-75' 
-                                                                                : 'bg-gray-50 accent-gray-300 opacity-30'
-                                                                    }`}
-                                                                />
-                                                                <div className="flex justify-between items-center">
-                                                                    <span className={`font-medium ${
-                                                                        isSelected 
-                                                                            ? 'text-green-600' 
-                                                                            : isCompleted 
-                                                                                ? 'text-green-500 opacity-75' 
-                                                                                : 'text-gray-400 opacity-50'
-                                                                    }`}>{Math.round(value)}%</span>
-                                                                    {baselineYield && (
-                                                                        <span className={`text-xs ${
-                                                                            isSelected 
-                                                                                ? 'text-green-500' 
-                                                                                : isCompleted 
-                                                                                    ? 'text-green-400 opacity-75' 
-                                                                                    : 'text-gray-400 opacity-50'
-                                                                        }`}>
-                                                                            {calculateYieldImpact(value, baselineYield).toFixed(1)}t
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                                
-                                                <div className="mt-2">
-                                                    <label className="block text-gray-700 text-xs">Confidence</label>
-                                                    <input 
-                                                        type="range" 
-                                                        min="1" 
-                                                        max="100" 
-                                                        value={userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
+                                {/* Treatment Distribution */}
+                                <div className="space-y-2">
+                                    <div className="text-xs font-semibold text-green-600 mb-2">TREATMENT</div>
+                                    
+                                    <div className="grid grid-cols-4 gap-2 text-xs">
+                                        {(['min', 'mode', 'max'] as const).map((field) => {
+                                            const value = userDist.treatment[field] ?? DEFAULT_TREATMENT[field];
+                                            const baselineValue = userDist.baseline[field] ?? DEFAULT_BASELINE[field];
+                                            return (
+                                                <div key={field} className="space-y-1">
+                                                    <label className="block text-gray-700 capitalize">{field}</label>
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max={Math.min(100, baselineValue)}
+                                                        value={value}
                                                         disabled={!isSelected}
                                                         onChange={(e) => {
                                                             if (isSelected) {
-                                                                handleDistributionChange(scenario.id, 'treatment', 'confidence', Number(e.target.value));
+                                                                handleDistributionChange(scenario.id, 'treatment', field, Number(e.target.value));
                                                             }
                                                         }}
                                                         className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
@@ -425,20 +377,66 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                                                     : 'bg-gray-50 accent-gray-300 opacity-30'
                                                         }`}
                                                     />
-                                                    <span className={`font-medium text-xs ${
-                                                        isSelected 
-                                                            ? 'text-green-600' 
-                                                            : isCompleted 
-                                                                ? 'text-green-500 opacity-75' 
-                                                                : 'text-gray-400 opacity-50'
-                                                    }`}>
-                                                        {userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
-                                                    </span>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className={`font-medium ${
+                                                            isSelected 
+                                                                ? 'text-green-600' 
+                                                                : isCompleted 
+                                                                    ? 'text-green-500 opacity-75' 
+                                                                    : 'text-gray-400 opacity-50'
+                                                        }`}>{Math.round(value)}%</span>
+                                                        {baselineYield && (
+                                                            <span className={`text-xs ${
+                                                                isSelected 
+                                                                    ? 'text-green-500' 
+                                                                    : isCompleted 
+                                                                        ? 'text-green-400 opacity-75' 
+                                                                        : 'text-gray-400 opacity-50'
+                                                            }`}>
+                                                                {calculateYieldImpact(value, baselineYield).toFixed(1)}t
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-
-                                        <td className="px-4 py-4">
+                                            );
+                                        })}
+                                        
+                                        {/* Confidence as 4th column */}
+                                        <div className="space-y-1">
+                                            <label className="block text-gray-700 text-xs">Confidence</label>
+                                            <input 
+                                                type="range" 
+                                                min="1" 
+                                                max="100" 
+                                                value={userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
+                                                disabled={!isSelected}
+                                                onChange={(e) => {
+                                                    if (isSelected) {
+                                                        handleDistributionChange(scenario.id, 'treatment', 'confidence', Number(e.target.value));
+                                                    }
+                                                }}
+                                                className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                                                    isSelected 
+                                                        ? 'bg-gray-200 accent-green-500' 
+                                                        : isCompleted 
+                                                            ? 'bg-gray-100 accent-green-400 opacity-75' 
+                                                            : 'bg-gray-50 accent-gray-300 opacity-30'
+                                                }`}
+                                            />
+                                            <span className={`font-medium text-xs ${
+                                                isSelected 
+                                                    ? 'text-green-600' 
+                                                    : isCompleted 
+                                                        ? 'text-green-500 opacity-75' 
+                                                        : 'text-gray-400 opacity-50'
+                                            }`}>
+                                                {userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>                                        <td className="px-4 py-4">
                                             <div className="flex space-x-2">
                                             <button
                                                 onClick={(e) => {
@@ -468,7 +466,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                         })
                         ) : (
                             <tr>
-                                <td colSpan={headers.length + 4} className="text-center py-4 text-gray-500">
+                                <td colSpan={headers.length + 3} className="text-center py-4 text-gray-500">
                                     No scenarios in this group.
                                 </td>
                             </tr>
