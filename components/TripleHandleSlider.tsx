@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { getDistributionParamTooltip } from '../services/tooltipService';
+import { Tooltip } from './Tooltip';
 
 interface TripleHandleSliderProps {
     min: number;
@@ -184,7 +186,9 @@ export const TripleHandleSlider: React.FC<TripleHandleSliderProps> = ({
             {showLabels && (
                 <div className="flex justify-between items-center text-xs">
                     <div className="flex flex-col items-start">
-                        <span className="text-gray-500 uppercase">Min</span>
+                        <Tooltip text={getDistributionParamTooltip('Min')}>
+                            <span className="text-gray-500 uppercase cursor-help">Min</span>
+                        </Tooltip>
                         <span className={`font-medium ${colors.text}`}>{min}%</span>
                         {yieldValue && (
                             <span className={`text-xs ${colors.text} opacity-75`}>
@@ -193,7 +197,9 @@ export const TripleHandleSlider: React.FC<TripleHandleSliderProps> = ({
                         )}
                     </div>
                     <div className="flex flex-col items-center">
-                        <span className="text-gray-500 uppercase">Mode</span>
+                        <Tooltip text={getDistributionParamTooltip('Mode')}>
+                            <span className="text-gray-500 uppercase cursor-help">Mode</span>
+                        </Tooltip>
                         <span className={`font-medium ${colors.text}`}>{mode}%</span>
                         {yieldValue && (
                             <span className={`text-xs ${colors.text} opacity-75`}>
@@ -202,7 +208,9 @@ export const TripleHandleSlider: React.FC<TripleHandleSliderProps> = ({
                         )}
                     </div>
                     <div className="flex flex-col items-end">
-                        <span className="text-gray-500 uppercase">Max</span>
+                        <Tooltip text={getDistributionParamTooltip('Max')}>
+                            <span className="text-gray-500 uppercase cursor-help">Max</span>
+                        </Tooltip>
                         <span className={`font-medium ${colors.text}`}>{max}%</span>
                         {yieldValue && (
                             <span className={`text-xs ${colors.text} opacity-75`}>
