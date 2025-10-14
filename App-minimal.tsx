@@ -1,0 +1,52 @@
+import React, { useMemo, useState } from 'react';
+import { ScenarioTableSimple } from './components/ScenarioTableSimple';
+import { INITIAL_SCENARIOS } from './constants';
+import { Scenario, UserElicitationData } from './types';
+
+const App: React.FC = () => {
+    const [scenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
+    const [userElicitationData] = useState<UserElicitationData>({});
+    
+    const scenarioGroups = useMemo(() => {
+        const groups = new Set(scenarios.map(s => s.scenario_group));
+        return Array.from(groups);
+    }, [scenarios]);
+    
+    const [selectedGroup] = useState<string | null>(scenarioGroups.length > 0 ? scenarioGroups[0] : null);
+    const [selectedScenarioId] = useState<string | null>(null);
+    
+    // Simple completion status - all false for now
+    const completionStatus = useMemo(() => {
+        const status: { [scenarioId: string]: boolean } = {};
+        scenarios.forEach(s => {
+            status[s.id] = false;
+        });
+        return status;
+    }, [scenarios]);
+    
+    return (
+        <div className="min-h-screen bg-gray-100">
+            <div className="max-w-7xl mx-auto py-4 px-4">
+                <h1 className="text-3xl font-bold text-gray-900 mb-8">
+                    Expert Elicitation for Ecological Modeling
+                </h1>
+                <ScenarioTableSimple
+                    scenarios={scenarios}
+                    groups={scenarioGroups}
+                    selectedGroup={selectedGroup}
+                    selectedScenarioId={selectedScenarioId}
+                    completionStatus={completionStatus}
+                    userElicitationData={userElicitationData}
+                    yieldColumn="Yield (t)"
+                    onSelectScenario={() => {}}
+                    onSelectGroup={() => {}}
+                    onAddScenario={() => {}}
+                    onDeleteScenario={() => {}}
+                    onDistributionChange={() => {}}
+                />
+            </div>
+        </div>
+    );
+};
+
+export default App;

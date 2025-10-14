@@ -64,14 +64,21 @@ export function parseCSV(csvText: string, existingScenarios: Scenario[]): Parsed
         throw new Error('CSV file must contain a "scenario_group" column');
     }
     
+    // Validate distribution columns are present
+    const missingDistHeaders = DIST_HEADERS.filter(h => !headers.includes(h));
+    if (missingDistHeaders.length > 0) {
+        throw new Error(`CSV file must contain distribution columns: ${missingDistHeaders.join(', ')}`);
+    }
+    
     // Find yield column
     const yieldColumn = findYieldColumn(headers);
     
     const userData: UserElicitationData = {};
-    const scenarios: Scenario[] = [...existingScenarios]; // Start with existing scenarios
+    const scenarios: Scenario[] = []; // Start fresh, don't use existing scenarios
 
-    const scenarioMap = new Map(existingScenarios.map(s => [s.id, s]));
-    const scenarioHeaders = headers.filter(h => !RESERVED_HEADERS.includes(h));
+    const scenarioMap = new Map<string, Scenario>();
+    // Get all non-reserved headers for scenario data (exclude dist headers AND scenario_id/scenario_group)
+    const scenarioDataHeaders = headers.filter(h => !RESERVED_HEADERS.includes(h));
 
     for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
@@ -82,18 +89,22 @@ export function parseCSV(csvText: string, existingScenarios: Scenario[]): Parsed
         
         const scenarioId = row['scenario_id'];
         
-        // If this is a new scenario (not in existing scenarios), add it
+        // Build scenario from all non-distribution, non-id columns
         if (!scenarioMap.has(scenarioId)) {
-            const scenarioData = scenarioHeaders.reduce((obj, header) => {
+            const scenarioData: { [key: string]: any } = {};
+            
+            // Add all custom columns (not reserved)
+            for (const header of scenarioDataHeaders) {
                 const value = row[header];
-                // Try to parse as number, otherwise keep as string
-                obj[header] = isNaN(Number(value)) ? value : Number(value);
-                return obj;
-            }, {} as { [key: string]: any });
+                if (value !== undefined && value !== '') {
+                    // Try to parse as number, otherwise keep as string
+                    scenarioData[header] = isNaN(Number(value)) ? value : Number(value);
+                }
+            }
             
             const newScenario: Scenario = {
                 id: scenarioId,
-                scenario_group: scenarioData.scenario_group || 'Unknown', // Ensure scenario_group exists
+                scenario_group: row['scenario_group'] || 'Unknown',
                 ...scenarioData
             };
             
