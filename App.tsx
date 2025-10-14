@@ -20,6 +20,9 @@ const App: React.FC = () => {
     const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
     const [scenarioToDelete, setScenarioToDelete] = useState<string | null>(null);
     
+    // Instructions collapse state
+    const [instructionsCollapsed, setInstructionsCollapsed] = useState(false);
+    
     const scenarioGroups = useMemo(() => {
         const groups = new Set(scenarios.map(s => s.scenario_group));
         return Array.from(groups);
@@ -180,17 +183,45 @@ const App: React.FC = () => {
                 </header>
                 
                 <main className="flex flex-col gap-8">
-                    <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                         <h2 className="text-xl font-semibold mb-4 text-gray-800">Instructions</h2>
-                        <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                            <li>Select a scenario group using the tabs (e.g., 'Pest Pressure').</li>
-                            <li>Select a specific scenario from the table. The selected row will be highlighted.</li>
-                            <li>On the chart, adjust the distributions for 'Baseline' (blue) and 'Treatment' (green) outcomes.</li>
-                            <li>Drag the circular handles on the chart or type values directly into the 'Distribution Parameters' panel.</li>
-                            <li>Use the sliders to indicate your <span className="font-semibold">Confidence</span> in each distribution.</li>
-                            <li>Faded lines on the chart show other distributions from the <span className="font-semibold">current group</span> for comparison.</li>
-                            <li>Your progress is saved automatically. Use the controls to download or upload your session.</li>
-                        </ol>
+                    {/* Instructions and Session Management in horizontal layout on larger screens */}
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Instructions Box */}
+                        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex-1">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-semibold text-gray-800">Instructions</h2>
+                                <button
+                                    onClick={() => setInstructionsCollapsed(!instructionsCollapsed)}
+                                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                                    aria-label={instructionsCollapsed ? "Expand instructions" : "Collapse instructions"}
+                                >
+                                    {instructionsCollapsed ? (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                            {!instructionsCollapsed && (
+                                <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                                    <li>Select a scenario group using the tabs (e.g., 'Pest Pressure').</li>
+                                    <li>Select a specific scenario from the table. The selected row will be highlighted.</li>
+                                    <li>On the chart, adjust the distributions for 'Baseline' (blue) and 'Treatment' (green) outcomes.</li>
+                                    <li>Drag the circular handles on the chart or type values directly into the 'Distribution Parameters' panel.</li>
+                                    <li>Use the sliders to indicate your <span className="font-semibold">Confidence</span> in each distribution.</li>
+                                    <li>Faded lines on the chart show other distributions from the <span className="font-semibold">current group</span> for comparison.</li>
+                                    <li>Your progress is saved automatically. Use the controls to download or upload your session.</li>
+                                </ol>
+                            )}
+                        </div>
+
+                        {/* Session Management - beside instructions on large screens, above scenario on smaller screens */}
+                        <div className="lg:w-80 lg:flex-shrink-0">
+                            <ControlPanel onUpload={handleFileUpload} onDownload={handleFileDownload} />
+                        </div>
                     </div>
 
                     <ScenarioTable 
@@ -207,10 +238,6 @@ const App: React.FC = () => {
                         onDeleteScenario={handleDeleteScenario}
                         onDistributionChange={handleDistributionChange}
                     />
-
-                    <div className="mt-6">
-                        <ControlPanel onUpload={handleFileUpload} onDownload={handleFileDownload} />
-                    </div>
                 </main>
             </div>
             
