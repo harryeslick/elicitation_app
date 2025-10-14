@@ -206,12 +206,12 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                         key={scenario.id}
                                         className={`border-b cursor-pointer transition-all duration-200 ${
                                             isSelected 
-                                                ? 'bg-blue-50 ring-2 ring-inset ring-blue-500 shadow-sm' 
-                                                : 'bg-white hover:bg-gray-50 opacity-70 hover:opacity-90'
+                                                ? 'bg-blue-100 ring-2 ring-inset ring-blue-500 shadow-md' 
+                                                : 'bg-white hover:bg-gray-50'
                                         }`}
                                         onClick={() => onSelectScenario(scenario.id)}
                                     >
-                                        <td className="px-4 py-4">
+                                        <td className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}>
                                             <div className="flex items-center justify-center">
                                                 {completionStatus[scenario.id] ? (
                                                     <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
@@ -225,18 +225,18 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                             </div>
                                         </td>
                                         {headers.map(header => (
-                                            <td key={`${scenario.id}-${header}`} className="px-4 py-4">
+                                            <td key={`${scenario.id}-${header}`} className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}>
                                                 {scenario[header]}
                                             </td>
                                         ))}
                                         
                         
                         {/* Distribution Parameters Column (without confidence) */}
-                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                            <div className="space-y-4">
+                        <td className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
+                            <div className={isSelected ? 'space-y-4' : 'space-y-2'}>
                                 {/* Baseline Distribution */}
-                                <div className={`space-y-2 ${!isSelected ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    <div className="text-xs font-semibold text-blue-600 mb-2">BASELINE</div>
+                                <div className={`${isSelected ? 'space-y-2' : ''} ${!isSelected ? 'pointer-events-none' : ''}`}>
+                                    {isSelected && <div className="text-xs font-semibold text-blue-600 mb-2">BASELINE</div>}
                                     <TripleHandleSlider
                                         min={userDist.baseline.min ?? DEFAULT_BASELINE.min}
                                         mode={userDist.baseline.mode ?? DEFAULT_BASELINE.mode}
@@ -261,12 +261,13 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                             }
                                         }}
                                         yieldValue={baselineYield}
+                                        showLabels={isSelected}
                                     />
                                 </div>
 
                                 {/* Treatment Distribution */}
-                                <div className={`space-y-2 ${!isSelected ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    <div className="text-xs font-semibold text-green-600 mb-2">TREATMENT</div>
+                                <div className={`${isSelected ? 'space-y-2' : ''} ${!isSelected ? 'pointer-events-none' : ''}`}>
+                                    {isSelected && <div className="text-xs font-semibold text-green-600 mb-2">TREATMENT</div>}
                                     <TripleHandleSlider
                                         min={userDist.treatment.min ?? DEFAULT_TREATMENT.min}
                                         mode={userDist.treatment.mode ?? DEFAULT_TREATMENT.mode}
@@ -290,93 +291,76 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                             handleTripleSliderChange(scenario.id, 'treatment', constrainedValues);
                                         }}
                                         yieldValue={baselineYield}
+                                        showLabels={isSelected}
                                     />
                                 </div>
                             </div>
                         </td>
 
                         {/* Separate Confidence Column */}
-                        <td className="px-2 py-4" onClick={(e) => e.stopPropagation()}>
-                            <div className={`flex flex-col items-center space-y-3 h-full ${!isSelected ? 'opacity-50 pointer-events-none' : ''}`}>
-                                {/* Baseline Confidence */}
-                                <div className="flex items-center gap-1">
-                                    <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
-                                        <input 
-                                            type="range" 
-                                            min="50" 
-                                            max="100" 
-                                            value={userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
-                                            disabled={!isSelected}
-                                            onChange={(e) => {
-                                                if (isSelected) {
+                        <td className={`px-2 ${isSelected ? 'py-4' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
+                            {isSelected ? (
+                                <div className="flex flex-col items-center space-y-3 h-full">
+                                    {/* Baseline Confidence */}
+                                    <div className="flex items-center gap-1">
+                                        <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
+                                            <input 
+                                                type="range" 
+                                                min="50" 
+                                                max="100" 
+                                                value={userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
+                                                onChange={(e) => {
                                                     handleDistributionChange(scenario.id, 'baseline', 'confidence', Number(e.target.value));
-                                                }
-                                            }}
-                                            className={`h-2 rounded-lg appearance-none cursor-pointer ${
-                                                isSelected 
-                                                    ? 'bg-gray-200 accent-blue-500' 
-                                                    : isCompleted 
-                                                        ? 'bg-gray-100 accent-blue-400 opacity-75' 
-                                                        : 'bg-gray-50 accent-gray-300 opacity-30'
-                                            }`}
-                                            style={{ 
-                                                width: '80px',
-                                                transform: 'rotate(-90deg)',
-                                                transformOrigin: 'center center'
-                                            }}
-                                        />
+                                                }}
+                                                className="h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-blue-500"
+                                                style={{ 
+                                                    width: '80px',
+                                                    transform: 'rotate(-90deg)',
+                                                    transformOrigin: 'center center'
+                                                }}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-medium text-blue-600">
+                                            {userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
+                                        </span>
                                     </div>
-                                    <span className={`text-xs font-medium ${
-                                        isSelected 
-                                            ? 'text-blue-600' 
-                                            : isCompleted 
-                                                ? 'text-blue-500 opacity-75' 
-                                                : 'text-gray-400 opacity-50'
-                                    }`}>
+
+                                    {/* Treatment Confidence */}
+                                    <div className="flex items-center gap-1">
+                                        <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
+                                            <input 
+                                                type="range" 
+                                                min="50" 
+                                                max="100" 
+                                                value={userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
+                                                onChange={(e) => {
+                                                    handleDistributionChange(scenario.id, 'treatment', 'confidence', Number(e.target.value));
+                                                }}
+                                                className="h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-green-500"
+                                                style={{ 
+                                                    width: '80px',
+                                                    transform: 'rotate(-90deg)',
+                                                    transformOrigin: 'center center'
+                                                }}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-medium text-green-600">
+                                            {userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
+                                        </span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center space-y-2">
+                                    {/* Just show the confidence values for non-selected rows */}
+                                    <span className="text-xs font-medium text-blue-600">
                                         {userDist.baseline.confidence ?? DEFAULT_BASELINE.confidence}
                                     </span>
-                                </div>
-
-                                {/* Treatment Confidence */}
-                                <div className="flex items-center gap-1">
-                                    <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
-                                        <input 
-                                            type="range" 
-                                            min="50" 
-                                            max="100" 
-                                            value={userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
-                                            disabled={!isSelected}
-                                            onChange={(e) => {
-                                                if (isSelected) {
-                                                    handleDistributionChange(scenario.id, 'treatment', 'confidence', Number(e.target.value));
-                                                }
-                                            }}
-                                            className={`h-2 rounded-lg appearance-none cursor-pointer ${
-                                                isSelected 
-                                                    ? 'bg-gray-200 accent-green-500' 
-                                                    : isCompleted 
-                                                        ? 'bg-gray-100 accent-green-400 opacity-75' 
-                                                        : 'bg-gray-50 accent-gray-300 opacity-30'
-                                            }`}
-                                            style={{ 
-                                                width: '80px',
-                                                transform: 'rotate(-90deg)',
-                                                transformOrigin: 'center center'
-                                            }}
-                                        />
-                                    </div>
-                                    <span className={`text-xs font-medium ${
-                                        isSelected 
-                                            ? 'text-green-600' 
-                                            : isCompleted 
-                                                ? 'text-green-500 opacity-75' 
-                                                : 'text-gray-400 opacity-50'
-                                    }`}>
+                                    <span className="text-xs font-medium text-green-600">
                                         {userDist.treatment.confidence ?? DEFAULT_TREATMENT.confidence}
                                     </span>
                                 </div>
-                            </div>
-                        </td>                                        <td className="px-4 py-4">
+                            )}
+                        </td>                                        <td className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}>
                                             <div className="flex space-x-2">
                                             <button
                                                 onClick={(e) => {

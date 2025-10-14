@@ -10,6 +10,7 @@ interface TripleHandleSliderProps {
     color?: 'blue' | 'green';
     onChange: (values: { min: number; mode: number; max: number }) => void;
     yieldValue?: number;
+    showLabels?: boolean;
 }
 
 export const TripleHandleSlider: React.FC<TripleHandleSliderProps> = ({
@@ -21,7 +22,8 @@ export const TripleHandleSlider: React.FC<TripleHandleSliderProps> = ({
     disabled = false,
     color = 'blue',
     onChange,
-    yieldValue
+    yieldValue,
+    showLabels = true
 }) => {
     const sliderRef = useRef<HTMLDivElement>(null);
     const [dragging, setDragging] = useState<'min' | 'mode' | 'max' | null>(null);
@@ -123,7 +125,7 @@ export const TripleHandleSlider: React.FC<TripleHandleSliderProps> = ({
     };
 
     return (
-        <div className="space-y-2">
+        <div className={showLabels ? 'space-y-2' : ''}>
             {/* Slider track */}
             <div
                 ref={sliderRef}
@@ -178,36 +180,38 @@ export const TripleHandleSlider: React.FC<TripleHandleSliderProps> = ({
                 />
             </div>
 
-            {/* Value labels */}
-            <div className="flex justify-between items-center text-xs">
-                <div className="flex flex-col items-start">
-                    <span className="text-gray-500 uppercase">Min</span>
-                    <span className={`font-medium ${colors.text}`}>{min}%</span>
-                    {yieldValue && (
-                        <span className={`text-xs ${colors.text} opacity-75`}>
-                            {calculateYieldImpact(min, yieldValue).toFixed(1)}t
-                        </span>
-                    )}
+            {/* Value labels - only show if showLabels is true */}
+            {showLabels && (
+                <div className="flex justify-between items-center text-xs">
+                    <div className="flex flex-col items-start">
+                        <span className="text-gray-500 uppercase">Min</span>
+                        <span className={`font-medium ${colors.text}`}>{min}%</span>
+                        {yieldValue && (
+                            <span className={`text-xs ${colors.text} opacity-75`}>
+                                {calculateYieldImpact(min, yieldValue).toFixed(1)}t
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <span className="text-gray-500 uppercase">Mode</span>
+                        <span className={`font-medium ${colors.text}`}>{mode}%</span>
+                        {yieldValue && (
+                            <span className={`text-xs ${colors.text} opacity-75`}>
+                                {calculateYieldImpact(mode, yieldValue).toFixed(1)}t
+                            </span>
+                        )}
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-gray-500 uppercase">Max</span>
+                        <span className={`font-medium ${colors.text}`}>{max}%</span>
+                        {yieldValue && (
+                            <span className={`text-xs ${colors.text} opacity-75`}>
+                                {calculateYieldImpact(max, yieldValue).toFixed(1)}t
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <div className="flex flex-col items-center">
-                    <span className="text-gray-500 uppercase">Mode</span>
-                    <span className={`font-medium ${colors.text}`}>{mode}%</span>
-                    {yieldValue && (
-                        <span className={`text-xs ${colors.text} opacity-75`}>
-                            {calculateYieldImpact(mode, yieldValue).toFixed(1)}t
-                        </span>
-                    )}
-                </div>
-                <div className="flex flex-col items-end">
-                    <span className="text-gray-500 uppercase">Max</span>
-                    <span className={`font-medium ${colors.text}`}>{max}%</span>
-                    {yieldValue && (
-                        <span className={`text-xs ${colors.text} opacity-75`}>
-                            {calculateYieldImpact(max, yieldValue).toFixed(1)}t
-                        </span>
-                    )}
-                </div>
-            </div>
+            )}
         </div>
     );
 };
