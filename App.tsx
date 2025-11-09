@@ -132,6 +132,18 @@ const App: React.FC = () => {
         setConfirmDeleteModalOpen(true);
     }, []);
 
+    const handleUpdateScenarioComment = useCallback((scenarioId: string, comment: string) => {
+        setScenarios(prev => prev.map(scenario => {
+            if (scenario.id !== scenarioId) {
+                return scenario;
+            }
+            return {
+                ...scenario,
+                comment: comment.replace(/,/g, '')
+            };
+        }));
+    }, []);
+
     const confirmDeleteScenario = useCallback(() => {
         if (scenarioToDelete) {
             setScenarios(prev => prev.filter(s => s.id !== scenarioToDelete));
@@ -178,7 +190,7 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-gray-50 text-gray-800 p-4 sm:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-8">
-                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Expert Elicitation for Ecological Modeling</h1>
+                    <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Expert Elicitation for Lupin Sclerotinia Management</h1>
                     <p className="mt-2 text-lg text-gray-600">Define outcome distributions for baseline and treatment scenarios based on your expert knowledge.</p>
                 </header>
                 
@@ -237,6 +249,7 @@ const App: React.FC = () => {
                         onAddScenario={handleAddScenario}
                         onDeleteScenario={handleDeleteScenario}
                         onDistributionChange={handleDistributionChange}
+                        onUpdateComment={handleUpdateScenarioComment}
                     />
                 </main>
             </div>

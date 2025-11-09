@@ -38,7 +38,7 @@ export const ScenarioEditModal: React.FC<ScenarioEditModalProps> = ({
     };
 
     // Get all fields except id
-    const editableFields = Object.keys(scenario).filter(key => key !== 'id');
+    const editableFields = Object.keys(scenario).filter(key => !['id', 'comment'].includes(key));
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">

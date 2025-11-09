@@ -1,6 +1,7 @@
 export interface Scenario {
     id: string;
     scenario_group: string;
+    comment?: string;
     [key: string]: any; 
 }
 

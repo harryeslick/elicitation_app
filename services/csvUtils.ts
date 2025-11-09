@@ -1,7 +1,8 @@
 import { Scenario, UserElicitationData } from '../types';
 
+const COMMENT_HEADER = 'comment';
 const DIST_HEADERS = ['baseline_min', 'baseline_max', 'baseline_mode', 'baseline_confidence', 'treatment_min', 'treatment_max', 'treatment_mode', 'treatment_confidence'];
-const RESERVED_HEADERS = ['scenario_id', 'scenario_group', ...DIST_HEADERS];
+const RESERVED_HEADERS = ['scenario_id', 'scenario_group', COMMENT_HEADER, ...DIST_HEADERS];
 
 // Function to find yield column using regex
 function findYieldColumn(headers: string[]): string | null {
@@ -18,14 +19,14 @@ export function generateCSV(scenarios: Scenario[], userData: UserElicitationData
     const allScenarioHeaders = new Set<string>();
     scenarios.forEach(scenario => {
         Object.keys(scenario).forEach(key => {
-            if (key !== 'id') {
+            if (!['id', 'scenario_group', 'comment'].includes(key)) {
                 allScenarioHeaders.add(key);
             }
         });
     });
     
     const scenarioHeaders = Array.from(allScenarioHeaders).sort();
-    const headers = ['scenario_id', ...scenarioHeaders, ...DIST_HEADERS];
+    const headers = ['scenario_id', 'scenario_group', COMMENT_HEADER, ...scenarioHeaders, ...DIST_HEADERS];
 
     const rows = scenarios.map(scenario => {
         const scenarioData = scenarioHeaders.map(h => scenario[h] ?? ''); // Handle missing properties
@@ -36,7 +37,15 @@ export function generateCSV(scenarios: Scenario[], userData: UserElicitationData
             userDist.treatment.min ?? '', userDist.treatment.max ?? '', userDist.treatment.mode ?? '', userDist.treatment.confidence ?? '',
         ] : Array(8).fill('');
 
-        return [scenario.id, ...scenarioData, ...distData].join(',');
+        const sanitizedComment = (scenario.comment ?? '').replace(/,/g, '');
+
+        return [
+            scenario.id,
+            scenario.scenario_group ?? '',
+            sanitizedComment,
+            ...scenarioData,
+            ...distData
+        ].join(',');
     });
 
     return [headers.join(','), ...rows].join('\n');
@@ -105,6 +114,7 @@ export function parseCSV(csvText: string, existingScenarios: Scenario[]): Parsed
             const newScenario: Scenario = {
                 id: scenarioId,
                 scenario_group: row['scenario_group'] || 'Unknown',
+                comment: row[COMMENT_HEADER] || '',
                 ...scenarioData
             };
             

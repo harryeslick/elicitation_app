@@ -11,7 +11,8 @@ const keys = Object.keys(rawScenarioData['canola_pct']);
 export const INITIAL_SCENARIOS: Scenario[] = keys.map((key, index) => {
     const scenario: Scenario = { 
         id: `scenario_${key}`,
-        scenario_group: index < 3 ? 'Pest Pressure' : 'Drought Stress' // Assigning groups for demonstration
+        scenario_group: index < 3 ? 'Pest Pressure' : 'Drought Stress', // Assigning groups for demonstration
+        comment: ''
     };
     for (const prop in rawScenarioData) {
         scenario[prop] = (rawScenarioData as any)[prop][key];

@@ -18,6 +18,7 @@ interface ScenarioTableProps {
     onAddScenario: (templateScenario: Scenario) => void;
     onDeleteScenario: (scenarioId: string) => void;
     onDistributionChange: (scenarioId: string, type: 'baseline' | 'treatment', newDistribution: UserDistribution) => void;
+    onUpdateComment: (scenarioId: string, comment: string) => void;
 }
 
 // Helper function to calculate yield impact
@@ -37,9 +38,19 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
     onSelectGroup,
     onAddScenario,
     onDeleteScenario,
-    onDistributionChange
+    onDistributionChange,
+    onUpdateComment
 }) => {
-    const headers = scenarios.length > 0 ? Object.keys(scenarios[0]).filter(key => !['id', 'scenario_group'].includes(key)) : [];
+    const headers = scenarios.length > 0 ? Object.keys(scenarios[0]).filter(key => !['id', 'scenario_group', 'comment'].includes(key)) : [];
+
+    const handleCommentButtonClick = (event: React.MouseEvent, scenario: Scenario) => {
+        event.stopPropagation();
+        const existingComment = scenario.comment ?? '';
+        const newComment = window.prompt('Enter a comment for this scenario:', existingComment);
+        if (newComment !== null) {
+            onUpdateComment(scenario.id, newComment);
+        }
+    };
 
     const handleDistributionChange = (scenarioId: string, type: 'baseline' | 'treatment', field: keyof UserDistribution, value: number) => {
         const currentUserDist = userElicitationData[scenarioId] || { 
@@ -360,31 +371,41 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                     </span>
                                 </div>
                             )}
-                        </td>                                        <td className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}>
-                                            <div className="flex space-x-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDuplicateScenario(scenario);
-                                                }}
-                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                                title="Duplicate scenario"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                onClick={(e) => handleDeleteScenario(e, scenario.id)}
-                                                className="text-red-600 hover:text-red-800 text-sm font-medium"
-                                                title="Delete scenario"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
+                        </td>
+                        <td className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={(e) => handleCommentButtonClick(e, scenario)}
+                                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                                    title={scenario.comment ? 'Edit comment' : 'Add comment'}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h8m-8 4h5M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H7l-4 4V7a2 2 0 012-2z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDuplicateScenario(scenario);
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                    title="Duplicate scenario"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </button>
+                                <button
+                                    onClick={(e) => handleDeleteScenario(e, scenario.id)}
+                                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                                    title="Delete scenario"
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
                                 </tr>
                             );
                         })
