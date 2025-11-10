@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { DEFAULT_BASELINE, DEFAULT_TREATMENT } from '../services/distributionUtils';
+import { DEFAULT_BASELINE, DEFAULT_SLIDER_RANGE, DEFAULT_TREATMENT } from '../services/distributionUtils';
 import { getTooltipText } from '../services/tooltipService';
 import { Scenario, UserDistribution, UserElicitationData } from '../types';
 import { Tooltip } from './Tooltip';
@@ -381,8 +381,8 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                         min={userDist.baseline.min ?? DEFAULT_BASELINE.min}
                                         mode={userDist.baseline.mode ?? DEFAULT_BASELINE.mode}
                                         max={userDist.baseline.max ?? DEFAULT_BASELINE.max}
-                                        minBound={0}
-                                        maxBound={100}
+                                        minBound={DEFAULT_SLIDER_RANGE.min}
+                                        maxBound={DEFAULT_SLIDER_RANGE.max}
                                         disabled={!isSelected}
                                         color="blue"
                                         onChange={(values) => {
@@ -412,8 +412,8 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                         min={userDist.treatment.min ?? DEFAULT_TREATMENT.min}
                                         mode={userDist.treatment.mode ?? DEFAULT_TREATMENT.mode}
                                         max={userDist.treatment.max ?? DEFAULT_TREATMENT.max}
-                                        minBound={0}
-                                        maxBound={100}
+                                        minBound={DEFAULT_SLIDER_RANGE.min}
+                                        maxBound={DEFAULT_SLIDER_RANGE.max}
                                         disabled={!isSelected}
                                         color="green"
                                         onChange={(values) => {

@@ -1,8 +1,9 @@
 import { Distribution, ScenarioDistribution, UserDistribution, UserScenarioDistribution } from '../types';
 
 // Default values for distributions
-export const DEFAULT_BASELINE: Distribution = { min: 20, max: 80, mode: 40, confidence: 50 };
-export const DEFAULT_TREATMENT: Distribution = { min: 0, max: 60, mode: 30, confidence: 50 };
+export const DEFAULT_BASELINE: Distribution = { min: 0, max: 30, mode: 15, confidence: 100 };
+export const DEFAULT_TREATMENT: Distribution = { min: 0, max: 20, mode: 10, confidence: 100 };
+export const DEFAULT_SLIDER_RANGE = { min: 0, max: 40 };
 
 /**
  * Convert a UserDistribution (with possible nulls) to a full Distribution using defaults

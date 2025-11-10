@@ -1,5 +1,0 @@
-{
-  "name": "Expert Elicitation for Ecological Modeling",
-  "description": "A web application to assist in collecting expert opinion for ecological model development. Experts define outcome distributions for various scenarios using an interactive chart to shape Beta distributions.",
-  "requestFramePermissions": []
-}
