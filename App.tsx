@@ -4,15 +4,15 @@ import { ControlPanel } from './components/ControlPanel';
 
 import { ScenarioEditModal } from './components/ScenarioEditModal';
 import { ScenarioTable } from './components/ScenarioTable';
-import { INITIAL_SCENARIOS } from './constants';
+import { DEFAULT_ELICITATION_DATA } from './constants';
 import { generateCSV, parseCSV, ParsedCSVData } from './services/csvUtils';
 import { getEmptyUserScenario, hasScenarioUserEdits } from './services/distributionUtils';
 import { Scenario, UserDistribution, UserElicitationData } from './types';
 
 const App: React.FC = () => {
-    const [scenarios, setScenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
-    const [userElicitationData, setUserElicitationData] = useState<UserElicitationData>({});
-    const [yieldColumn, setYieldColumn] = useState<string | null>('Yield (t)'); // Default yield column
+    const [scenarios, setScenarios] = useState<Scenario[]>(DEFAULT_ELICITATION_DATA.scenarios);
+    const [userElicitationData, setUserElicitationData] = useState<UserElicitationData>(DEFAULT_ELICITATION_DATA.userElicitationData);
+    const [yieldColumn, setYieldColumn] = useState<string | null>(DEFAULT_ELICITATION_DATA.yieldColumn); // Derived from default CSV
     
     // Modal states
     const [editModalOpen, setEditModalOpen] = useState(false);

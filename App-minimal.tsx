@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { ScenarioTableSimple } from './components/ScenarioTableSimple';
-import { INITIAL_SCENARIOS } from './constants';
+import { DEFAULT_ELICITATION_DATA } from './constants';
 import { Scenario, UserElicitationData } from './types';
 
 const App: React.FC = () => {
-    const [scenarios] = useState<Scenario[]>(INITIAL_SCENARIOS);
-    const [userElicitationData] = useState<UserElicitationData>({});
+    const [scenarios] = useState<Scenario[]>(DEFAULT_ELICITATION_DATA.scenarios);
+    const [userElicitationData] = useState<UserElicitationData>(DEFAULT_ELICITATION_DATA.userElicitationData);
     
     const scenarioGroups = useMemo(() => {
         const groups = new Set(scenarios.map(s => s.scenario_group));
@@ -37,7 +37,7 @@ const App: React.FC = () => {
                     selectedScenarioId={selectedScenarioId}
                     completionStatus={completionStatus}
                     userElicitationData={userElicitationData}
-                    yieldColumn="Yield (t)"
+                    yieldColumn={DEFAULT_ELICITATION_DATA.yieldColumn}
                     onSelectScenario={() => {}}
                     onSelectGroup={() => {}}
                     onAddScenario={() => {}}

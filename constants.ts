@@ -1,21 +1,26 @@
-import { Scenario } from './types';
+import defaultScenarioCSV from './sclerotiniLM elicitation_251110.csv?raw';
+import { parseCSV, ParsedCSVData } from './services/csvUtils';
+import { Scenario, UserElicitationData } from './types';
 
-const rawScenarioData = {
-    "canola_pct": { "72": 20.0, "73": 25.0, "74": 30.0, "75": 15.0, "76": 22.0 },
-    "Sporacle": { "72": "High", "73": "High", "74": "Low", "75": "Medium", "76": "High" },
-    "Yield (t)": { "72": 2.0, "73": 2.2, "74": 2.5, "75": 1.8, "76": 2.1 },
-    "Resistance loss": { "72": 0.0, "73": 0.1, "74": 0.05, "75": 0.2, "76": 0.15 }
+interface DefaultElicitationData extends ParsedCSVData {
+    scenarios: Scenario[];
+    userElicitationData: UserElicitationData;
+}
+
+const buildDefaultData = (): DefaultElicitationData => {
+    try {
+        return parseCSV(defaultScenarioCSV, []);
+    } catch (error) {
+        console.error('Failed to parse default scenario CSV.', error);
+        return {
+            scenarios: [],
+            userElicitationData: {},
+            yieldColumn: null
+        };
+    }
 };
 
-const keys = Object.keys(rawScenarioData['canola_pct']);
-export const INITIAL_SCENARIOS: Scenario[] = keys.map((key, index) => {
-    const scenario: Scenario = { 
-        id: `scenario_${key}`,
-        scenario_group: index < 3 ? 'Pest Pressure' : 'Drought Stress', // Assigning groups for demonstration
-        comment: ''
-    };
-    for (const prop in rawScenarioData) {
-        scenario[prop] = (rawScenarioData as any)[prop][key];
-    }
-    return scenario;
-});
+export const DEFAULT_ELICITATION_DATA = buildDefaultData();
+export const INITIAL_SCENARIOS: Scenario[] = DEFAULT_ELICITATION_DATA.scenarios;
+export const INITIAL_USER_ELICITATION_DATA: UserElicitationData = DEFAULT_ELICITATION_DATA.userElicitationData;
+export const INITIAL_YIELD_COLUMN: string | null = DEFAULT_ELICITATION_DATA.yieldColumn;
