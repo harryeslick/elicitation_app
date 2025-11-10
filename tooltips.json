@@ -1,15 +1,18 @@
 {
   "table_headers": {
     "Status": "Completion status indicator - shows in the row has been edited",
-    "Confidence": "Certainty level (50-100) - How confident are you that the true value lies within the specified range?",
-    "YIELD LOSS": "Combined unsprayed and sprayed yield-loss parameters. Unsprayed represents outcomes without intervention, sprayed captures post-treatment outcomes and must remain ≤ unsprayed values.",
+    "Confidence": "How confident are you that your interval, from min to max, could capture the true value of yield loss in this scenario?",
+    "YIELD LOSS": "What percent of the total yield would you expect to lose in the scenario when no spray is applied, and if the optimum spray program is followed?",
     "Actions": "Add a comment, duplicate and modify a scenario, or delete a scenario",
-    "Canopy Density":" How dense is the lupin canopy?  dense -> cannot see the soil /n moderate -> soil visible in patches /n sparse -> soil clearly visible between plants"
-  
+    "Canopy Density":" How dense is the lupin canopy?  dense -> cannot see the soil /n moderate -> soil visible in patches /n sparse -> soil clearly visible between plants",
+    "4-WEEK RAINFALL HISTORY (DAYS)": "Number of days with rainfall in the 4 weeks (28 days) prior to the spray decision date",
+    "RAINFALL OUTLOOK (2-WEEKS)": "Number of days with rainfall in the 2 weeks (14 days) following the spray application",
+    "LANDSCAPE POSITION": "Where is the scenario located in the landscape? (e.g., valley, slope, ridge)",
+    "SOIL TYPE": "What type of soil is present at the site? (e.g., sandy, clayey )"
   },
   "distribution_parameters": {
-    "Min": "Minimum possible value - the best-case scenario or lowest expected outcome",
-    "Mode": "Most likely value - the peak or most probable outcome of the distribution",
-    "Max": "Maximum possible value - the worst-case scenario or highest expected outcome"
+    "Min": "Realistically, what do you think the lowest plausible value for yield loss in this scenario is?",
+    "Mode": "Most likely value, what is your best guess for yield loss in this scenario?",
+    "Max": "Realistically, what do you think the highest plausible value for yield loss in this scenario is?"
   }
 }

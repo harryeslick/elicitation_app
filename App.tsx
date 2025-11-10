@@ -22,6 +22,7 @@ const App: React.FC = () => {
     
     // Instructions collapse state
     const [instructionsCollapsed, setInstructionsCollapsed] = useState(false);
+    const [assumptionsCollapsed, setAssumptionsCollapsed] = useState(false);
     
     const scenarioGroups = useMemo(() => {
         const groups = new Set(scenarios.map(s => s.scenario_group));
@@ -191,43 +192,78 @@ const App: React.FC = () => {
             <div className="max-w-7xl mx-auto">
                 <header className="mb-8">
                     <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">Expert Elicitation for Lupin Sclerotinia Management</h1>
-                    <p className="mt-2 text-lg text-gray-600">Define outcome distributions for baseline and treatment scenarios based on your expert knowledge.</p>
+                    <p className="mt-2 text-lg text-gray-600">Define outcome distributions for different scenarios based on your expert knowledge.</p>
+                    <p className="mt-2 text-lg text-gray-600">The outcome range should reflect residual uncertainty, assuming all scenario factors are correct.</p>
                 </header>
                 
                 <main className="flex flex-col gap-8">
                     {/* Instructions and Session Management in horizontal layout on larger screens */}
                     <div className="flex flex-col lg:flex-row gap-8">
-                        {/* Instructions Box */}
-                        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex-1">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-semibold text-gray-800">Instructions</h2>
-                                <button
-                                    onClick={() => setInstructionsCollapsed(!instructionsCollapsed)}
-                                    className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                                    aria-label={instructionsCollapsed ? "Expand instructions" : "Collapse instructions"}
-                                >
-                                    {instructionsCollapsed ? (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    ) : (
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                        </svg>
-                                    )}
-                                </button>
+                        <div className="flex flex-col gap-6 flex-1">
+                            {/* Instructions Box */}
+                            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-semibold text-gray-800">Instructions</h2>
+                                    <button
+                                        onClick={() => setInstructionsCollapsed(!instructionsCollapsed)}
+                                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        aria-label={instructionsCollapsed ? "Expand instructions" : "Collapse instructions"}
+                                    >
+                                        {instructionsCollapsed ? (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {!instructionsCollapsed && (
+                                    <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                                        <li>Select a scenario group using the tabs (e.g., 'canopy density').</li>
+                                        <li>Select a specific scenario from the table. The selected row will be highlighted.</li>
+                                        <li>Using the sliders, adjust the yield loss range for 'Unsprayed' (blue) and 'Sprayed' (green) outcomes.</li>
+                                        <li>The min/max inputs should encode the plausible range after accounting for the scenario context; the mode reflects the most likely point within that range.</li>
+                                        <li>Use the sliders to indicate your <span className="font-semibold">Confidence</span> in each distribution.</li>
+                                        <li>Faded lines on the chart show other distributions from the <span className="font-semibold">current group</span> for comparison.</li>
+                                        <li><span className="font-semibold">Your progress is NOT saved automatically.</span> Use the Session Management buttons to download or upload your session.</li>
+                                        <li>If you prefer to work in a spreadsheet, you can download the results and fill the values in manually.</li>
+                                    </ol>
+                                )}
                             </div>
-                            {!instructionsCollapsed && (
-                                <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                                    <li>Select a scenario group using the tabs (e.g., 'canopy density').</li>
-                                    <li>Select a specific scenario from the table. The selected row will be highlighted.</li>
-                                    <li>Using the sliders, adjust the yield loss range for 'Unsprayed' (blue) and 'Sprayed' (green) outcomes.</li>
-                                    <li>Use the sliders to indicate your <span className="font-semibold">Confidence</span> in each distribution.</li>
-                                    <li>Faded lines on the chart show other distributions from the <span className="font-semibold">current group</span> for comparison.</li>
-                                    <li><span className="font-semibold">Your progress is NOT saved automatically.</span> Use the Session Management buttons to download or upload your session.</li>
-                                    <li>If you prefer to work in a spreadsheet, you can download the results and fill the values in manually.</li>
-                                </ol>
-                            )}
+
+                            {/* Assumptions Box */}
+                            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-xl font-semibold text-gray-800">Assumptions</h2>
+                                    <button
+                                        onClick={() => setAssumptionsCollapsed(!assumptionsCollapsed)}
+                                        className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                                        aria-label={assumptionsCollapsed ? "Expand assumptions" : "Collapse assumptions"}
+                                    >
+                                        {assumptionsCollapsed ? (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+                                {!assumptionsCollapsed && (
+                                    <ol className="list-decimal list-inside space-y-2 text-gray-700">
+                                        <li>For each scenario, assume the paddock has had a wheat-canola-lupin rotation, with a history of sclerotinia yield loss.</li>
+                                        <li>The current crop stage (for the rainfall observations) is the start of flowering, roughly optimum timing to apply a spray. eg. the 2-week rainfall outlook occurs after spray.</li>
+                                        <li>The sprayed treatment was applied at the optimum time, with an effective chemical. </li>
+                                        <li>The scenario is representative of the whole paddock, which is a plausible size for the region.</li>
+                                        
+                                    </ol>
+                                )}
+                            </div>
                         </div>
 
                         {/* Session Management - beside instructions on large screens, above scenario on smaller screens */}
