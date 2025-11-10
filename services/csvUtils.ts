@@ -87,44 +87,67 @@ export function parseCSV(csvText: string, existingScenarios: Scenario[]): Parsed
     const userData: UserElicitationData = {};
     const scenarios: Scenario[] = []; // Start fresh, don't use existing scenarios
 
-    const scenarioMap = new Map<string, Scenario>();
     // Get all non-reserved headers for scenario data (exclude dist headers AND scenario_id/scenario_group)
     const scenarioDataHeaders = headers.filter(h => !RESERVED_HEADERS.includes(h));
+    const comparableHeaders = headers.filter(header => header !== 'scenario_group');
+    const canonicalRows = new Map<string, Record<string, string>>();
 
     for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
+        const line = lines[i].trim();
+        if (!line) {
+            continue;
+        }
+
+        const values = line.split(',').map(v => v.trim());
         const row = headers.reduce((obj, header, index) => {
-            obj[header] = values[index];
+            obj[header] = values[index] ?? '';
             return obj;
         }, {} as { [key: string]: string });
         
         const scenarioId = row['scenario_id'];
-        
-        // Build scenario from all non-distribution, non-id columns
-        if (!scenarioMap.has(scenarioId)) {
-            const scenarioData: { [key: string]: any } = {};
-            
-            // Add all custom columns (not reserved)
-            for (const header of scenarioDataHeaders) {
-                const value = row[header];
-                if (value !== undefined && value !== '') {
-                    // Try to parse as number, otherwise keep as string
-                    scenarioData[header] = isNaN(Number(value)) ? value : Number(value);
-                }
-            }
-            
-            const newScenario: Scenario = {
-                id: scenarioId,
-                scenario_group: row['scenario_group'] || 'Unknown',
-                comment: (row[COMMENT_HEADER] || '').replace(/\\n/g, '\n'),
-                ...scenarioData
-            };
-            
-            scenarios.push(newScenario);
-            scenarioMap.set(scenarioId, newScenario);
+        if (!scenarioId) {
+            throw new Error(`Row ${i + 1} is missing a scenario_id value.`);
         }
+
+        const comparableRow = comparableHeaders.reduce((acc, header) => {
+            acc[header] = row[header] ?? '';
+            return acc;
+        }, {} as Record<string, string>);
+
+        const existingComparable = canonicalRows.get(scenarioId);
+        if (existingComparable) {
+            const mismatchedColumns = comparableHeaders.filter(header => {
+                const previous = existingComparable[header] ?? '';
+                const current = comparableRow[header] ?? '';
+                return previous !== current;
+            });
+
+            if (mismatchedColumns.length > 0) {
+                throw new Error(
+                    `Duplicate scenario_id "${scenarioId}" must match on all columns except scenario_group. Conflicts found in: ${mismatchedColumns.join(', ')}`
+                );
+            }
+        } else {
+            canonicalRows.set(scenarioId, comparableRow);
+        }
+
+        const scenarioData: { [key: string]: any } = {};
+        for (const header of scenarioDataHeaders) {
+            const value = row[header];
+            if (value !== undefined && value !== '') {
+                scenarioData[header] = isNaN(Number(value)) ? value : Number(value);
+            }
+        }
+
+        const newScenario: Scenario = {
+            id: scenarioId,
+            scenario_group: row['scenario_group'] || 'Unknown',
+            comment: (row[COMMENT_HEADER] || '').replace(/\\n/g, '\n'),
+            ...scenarioData
+        };
+
+        scenarios.push(newScenario);
         
-        // Parse user elicitation data for this scenario (preserving empty values as null)
         const parseValue = (value: string): number | null => {
             return value === '' ? null : parseFloat(value);
         };

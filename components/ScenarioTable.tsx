@@ -325,7 +325,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                     </thead>
                     <tbody>
                         {scenarios.length > 0 ? (
-                            scenarios.map((scenario) => {
+                            scenarios.map((scenario, rowIndex) => {
                                 const isSelected = selectedScenarioId === scenario.id;
                                 const isCompleted = completionStatus[scenario.id];
                                 const userDist = userElicitationData[scenario.id] || { 
@@ -336,7 +336,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
 
                                 return (
                                     <tr
-                                        key={scenario.id}
+                                        key={`${scenario.id}-${rowIndex}`}
                                         className={`border-b cursor-pointer transition-all duration-200 ${
                                             isSelected 
                                                 ? 'bg-blue-100 ring-2 ring-inset ring-blue-500 shadow-md' 
@@ -361,7 +361,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                             const cellStyle = columnColorStyles[header]?.(scenario[header]);
                                             return (
                                                 <td 
-                                                    key={`${scenario.id}-${header}`} 
+                                                    key={`${scenario.id}-${header}-${rowIndex}`}
                                                     className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}
                                                     style={cellStyle}
                                                 >
