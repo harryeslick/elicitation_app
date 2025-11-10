@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { DEFAULT_BASELINE, DEFAULT_TREATMENT } from '../services/distributionUtils';
 import { getTooltipText } from '../services/tooltipService';
 import { Scenario, UserDistribution, UserElicitationData } from '../types';
@@ -26,6 +26,43 @@ const calculateYieldImpact = (lossPercentage: number, baselineYield: number): nu
     return baselineYield * (1 - lossPercentage / 100);
 };
 
+const EMPTY_KEY = '__EMPTY__';
+
+const isValueEmpty = (value: unknown): boolean => {
+    if (value === null || value === undefined) {
+        return true;
+    }
+    if (typeof value === 'string') {
+        return value.trim() === '';
+    }
+    return false;
+};
+
+const getValueKey = (value: unknown): string => {
+    if (value === null || value === undefined) {
+        return EMPTY_KEY;
+    }
+    if (typeof value === 'number' && Number.isNaN(value)) {
+        return '__NAN__';
+    }
+    return String(value);
+};
+
+const extractNumericValue = (value: unknown): number | null => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        const normalized = value.replace(/,/g, '').trim();
+        if (!normalized) return null;
+        const match = normalized.match(/-?\d*\.?\d+/);
+        return match ? Number(match[0]) : null;
+    }
+    return null;
+};
+
+type ColumnStyleResolver = (value: unknown) => React.CSSProperties | undefined;
+
 export const ScenarioTable: React.FC<ScenarioTableProps> = ({ 
     scenarios, 
     groups, 
@@ -45,6 +82,78 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
     const [commentDraft, setCommentDraft] = useState('');
 
     const headers = scenarios.length > 0 ? Object.keys(scenarios[0]).filter(key => !['id', 'scenario_group', 'comment'].includes(key)) : [];
+
+    const columnColorStyles = useMemo(() => {
+        const styles: Record<string, ColumnStyleResolver> = {};
+
+        headers.forEach((header, columnIndex) => {
+            const columnValues = scenarios.map(s => s[header]);
+            const meaningfulValues = columnValues.filter(value => !isValueEmpty(value));
+            const uniqueValueKeys = Array.from(new Set(meaningfulValues.map(getValueKey)));
+
+            if (uniqueValueKeys.length <= 1) {
+                return;
+            }
+
+            const isNumericColumn = meaningfulValues.every(value => extractNumericValue(value) !== null);
+            const baseHue = (columnIndex * 59) % 360;
+
+            if (isNumericColumn) {
+                const keyToNumeric = new Map<string, number>();
+                meaningfulValues.forEach(value => {
+                    const key = getValueKey(value);
+                    if (!keyToNumeric.has(key)) {
+                        const numericValue = extractNumericValue(value);
+                        if (numericValue !== null) {
+                            keyToNumeric.set(key, numericValue);
+                        }
+                    }
+                });
+
+                const sortedEntries = Array.from(keyToNumeric.entries()).sort((a, b) => a[1] - b[1]);
+                if (sortedEntries.length <= 1) {
+                    return;
+                }
+
+                styles[header] = (value: unknown) => {
+                    if (isValueEmpty(value)) return undefined;
+                    const key = getValueKey(value);
+                    const entryIndex = sortedEntries.findIndex(([entryKey]) => entryKey === key);
+                    if (entryIndex === -1) return undefined;
+                    const steps = sortedEntries.length - 1;
+                    const ratio = steps === 0 ? 0 : entryIndex / steps;
+                    const lightnessStart = 92;
+                    const lightnessEnd = 68;
+                    const lightness = lightnessStart - (lightnessStart - lightnessEnd) * ratio;
+                    const alphaStart = 0.35;
+                    const alphaEnd = 0.7;
+                    const alpha = alphaStart + (alphaEnd - alphaStart) * ratio;
+
+                    return {
+                        backgroundColor: `hsla(${baseHue}, 65%, ${lightness}%, ${alpha})`
+                    };
+                };
+            } else {
+                const valueCount = uniqueValueKeys.length;
+                styles[header] = (value: unknown) => {
+                    if (isValueEmpty(value)) return undefined;
+                    const key = getValueKey(value);
+                    const valueIndex = uniqueValueKeys.indexOf(key);
+                    if (valueIndex === -1) return undefined;
+                    const steps = Math.max(valueCount - 1, 1);
+                    const ratio = valueIndex / steps;
+                    const hueSpread = 160;
+                    const hue = (baseHue + ratio * hueSpread) % 360;
+
+                    return {
+                        backgroundColor: `hsla(${hue}, 70%, 85%, 0.55)`
+                    };
+                };
+            }
+        });
+
+        return styles;
+    }, [headers, scenarios]);
 
     const handleCommentButtonClick = (event: React.MouseEvent, scenario: Scenario) => {
         event.stopPropagation();
@@ -248,11 +357,18 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                                 )}
                                             </div>
                                         </td>
-                                        {headers.map(header => (
-                                            <td key={`${scenario.id}-${header}`} className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}>
-                                                {scenario[header]}
-                                            </td>
-                                        ))}
+                                        {headers.map(header => {
+                                            const cellStyle = columnColorStyles[header]?.(scenario[header]);
+                                            return (
+                                                <td 
+                                                    key={`${scenario.id}-${header}`} 
+                                                    className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`}
+                                                    style={cellStyle}
+                                                >
+                                                    {scenario[header]}
+                                                </td>
+                                            );
+                                        })}
                                         
                         
                         {/* Distribution Parameters Column (without confidence) */}

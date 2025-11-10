@@ -1,13 +1,11 @@
 {
   "table_headers": {
-    "Status": "Completion status indicator showing whether expert has provided custom distribution parameters (✓) or is using default values (○)",
-    "CANOLA_PCT": "Type of crop or vegetation being studied in this scenario",
-    "SPORACLE": "Total area of the field or study site in hectares",
+    "Status": "Completion status indicator - shows in the row has been edited",
+    "Confidence": "Certainty level (50-100) - How confident are you that the true value lies within the specified range?",
     "Distribution Parameters": "Combined baseline and treatment distribution parameters. Baseline represents outcomes without intervention, treatment represents outcomes after applying intervention. Treatment values should be ≤ baseline values.",
-    "Confidence": "Certainty level (50-100) - higher values create a more peaked distribution around the mode, indicating greater confidence in the estimates",
-    "Actions": "Available actions for this scenario including duplicate and delete options",
-    "Yield (t)": "Total expected yield for the entire field (tonnes)",
-    "Scenario": "Unique identifier or name for this scenario"
+    "Actions": "Add a comment, duplicate and modify a scenario, or delete a scenario",
+    "Canopy Density":" How dense is the lupin canopy?  dense -> cannot see the soil /n moderate -> soil visible in patches /n sparse -> soil clearly visible between plants"
+  
   },
   "distribution_parameters": {
     "Min": "Minimum possible value - the best-case scenario or lowest expected outcome",
