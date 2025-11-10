@@ -307,8 +307,8 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                 </th>
                             ))}
                             <th scope="col" className="px-4 py-3 w-80">
-                                <Tooltip text={getTooltipText('Distribution Parameters')}>
-                                    Distribution Parameters
+                                <Tooltip text={getTooltipText('YIELD LOSS')}>
+                                    YIELD LOSS
                                 </Tooltip>
                             </th>
                             <th scope="col" className="px-4 py-3 w-20">
@@ -371,12 +371,12 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                         })}
                                         
                         
-                        {/* Distribution Parameters Column (without confidence) */}
+                        {/* YIELD LOSS Column (without confidence) */}
                         <td className={`px-4 ${isSelected ? 'py-4' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
                             <div className={isSelected ? 'space-y-4' : 'space-y-2'}>
-                                {/* Baseline Distribution */}
+                                {/* Unsprayed Distribution */}
                                 <div className={`${isSelected ? 'space-y-2' : ''} ${!isSelected ? 'pointer-events-none' : ''}`}>
-                                    {isSelected && <div className="text-xs font-semibold text-blue-600 mb-2">BASELINE</div>}
+                                    {isSelected && <div className="text-xs font-semibold text-blue-600 mb-2">UNSPRAYED</div>}
                                     <TripleHandleSlider
                                         min={userDist.baseline.min ?? DEFAULT_BASELINE.min}
                                         mode={userDist.baseline.mode ?? DEFAULT_BASELINE.mode}
@@ -405,9 +405,9 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                     />
                                 </div>
 
-                                {/* Treatment Distribution */}
+                                {/* Sprayed Distribution */}
                                 <div className={`${isSelected ? 'space-y-2' : ''} ${!isSelected ? 'pointer-events-none' : ''}`}>
-                                    {isSelected && <div className="text-xs font-semibold text-green-600 mb-2">TREATMENT</div>}
+                                    {isSelected && <div className="text-xs font-semibold text-green-600 mb-2">SPRAYED</div>}
                                     <TripleHandleSlider
                                         min={userDist.treatment.min ?? DEFAULT_TREATMENT.min}
                                         mode={userDist.treatment.mode ?? DEFAULT_TREATMENT.mode}
@@ -417,7 +417,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                         disabled={!isSelected}
                                         color="green"
                                         onChange={(values) => {
-                                            // Ensure treatment values don't exceed baseline values
+                                            // Ensure sprayed values don't exceed unsprayed values
                                             const baselineMin = userDist.baseline.min ?? DEFAULT_BASELINE.min;
                                             const baselineMode = userDist.baseline.mode ?? DEFAULT_BASELINE.mode;
                                             const baselineMax = userDist.baseline.max ?? DEFAULT_BASELINE.max;
@@ -441,7 +441,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                         <td className={`px-2 ${isSelected ? 'py-4' : 'py-2'}`} onClick={(e) => e.stopPropagation()}>
                             {isSelected ? (
                                 <div className="flex flex-col items-center space-y-3 h-full">
-                                    {/* Baseline Confidence */}
+                                    {/* Unsprayed Confidence */}
                                     <div className="flex items-center gap-1">
                                         <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
                                             <input 
@@ -465,7 +465,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                                         </span>
                                     </div>
 
-                                    {/* Treatment Confidence */}
+                                    {/* Sprayed Confidence */}
                                     <div className="flex items-center gap-1">
                                         <div className="flex items-center justify-center" style={{ height: '80px', width: '24px' }}>
                                             <input 

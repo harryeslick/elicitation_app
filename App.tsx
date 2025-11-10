@@ -219,13 +219,13 @@ const App: React.FC = () => {
                             </div>
                             {!instructionsCollapsed && (
                                 <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                                    <li>Select a scenario group using the tabs (e.g., 'Pest Pressure').</li>
+                                    <li>Select a scenario group using the tabs (e.g., 'canopy density').</li>
                                     <li>Select a specific scenario from the table. The selected row will be highlighted.</li>
-                                    <li>On the chart, adjust the distributions for 'Baseline' (blue) and 'Treatment' (green) outcomes.</li>
-                                    <li>Drag the circular handles on the chart or type values directly into the 'Distribution Parameters' panel.</li>
+                                    <li>Using the sliders, adjust the yield loss range for 'Unsprayed' (blue) and 'Sprayed' (green) outcomes.</li>
                                     <li>Use the sliders to indicate your <span className="font-semibold">Confidence</span> in each distribution.</li>
                                     <li>Faded lines on the chart show other distributions from the <span className="font-semibold">current group</span> for comparison.</li>
-                                    <li>Your progress is saved automatically. Use the controls to download or upload your session.</li>
+                                    <li><span className="font-semibold">Your progress is NOT saved automatically.</span> Use the Session Management buttons to download or upload your session.</li>
+                                    <li>If you prefer to work in a spreadsheet, you can download the results and fill the values in manually.</li>
                                 </ol>
                             )}
                         </div>

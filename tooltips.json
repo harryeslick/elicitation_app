@@ -2,7 +2,7 @@
   "table_headers": {
     "Status": "Completion status indicator - shows in the row has been edited",
     "Confidence": "Certainty level (50-100) - How confident are you that the true value lies within the specified range?",
-    "Distribution Parameters": "Combined baseline and treatment distribution parameters. Baseline represents outcomes without intervention, treatment represents outcomes after applying intervention. Treatment values should be ≤ baseline values.",
+    "YIELD LOSS": "Combined unsprayed and sprayed yield-loss parameters. Unsprayed represents outcomes without intervention, sprayed captures post-treatment outcomes and must remain ≤ unsprayed values.",
     "Actions": "Add a comment, duplicate and modify a scenario, or delete a scenario",
     "Canopy Density":" How dense is the lupin canopy?  dense -> cannot see the soil /n moderate -> soil visible in patches /n sparse -> soil clearly visible between plants"
   
