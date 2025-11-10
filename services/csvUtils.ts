@@ -37,7 +37,9 @@ export function generateCSV(scenarios: Scenario[], userData: UserElicitationData
             userDist.treatment.min ?? '', userDist.treatment.max ?? '', userDist.treatment.mode ?? '', userDist.treatment.confidence ?? '',
         ] : Array(8).fill('');
 
-        const sanitizedComment = (scenario.comment ?? '').replace(/,/g, '');
+        const sanitizedComment = (scenario.comment ?? '')
+            .replace(/,/g, '')
+            .replace(/\r?\n/g, '\\n');
 
         return [
             scenario.id,
@@ -114,7 +116,7 @@ export function parseCSV(csvText: string, existingScenarios: Scenario[]): Parsed
             const newScenario: Scenario = {
                 id: scenarioId,
                 scenario_group: row['scenario_group'] || 'Unknown',
-                comment: row[COMMENT_HEADER] || '',
+                comment: (row[COMMENT_HEADER] || '').replace(/\\n/g, '\n'),
                 ...scenarioData
             };
             

@@ -38,7 +38,8 @@ export const ScenarioEditModal: React.FC<ScenarioEditModalProps> = ({
     };
 
     // Get all fields except id
-    const editableFields = Object.keys(scenario).filter(key => !['id', 'comment'].includes(key));
+    const baseFields = Object.keys(scenario).filter(key => !['id', 'comment'].includes(key));
+    const editableFields = [...baseFields, 'comment'];
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -66,6 +67,14 @@ export const ScenarioEditModal: React.FC<ScenarioEditModalProps> = ({
                                             </option>
                                         ))}
                                     </select>
+                                ) : field === 'comment' ? (
+                                    <textarea
+                                        value={editedScenario.comment || ''}
+                                        onChange={(e) => handleFieldChange(field, e.target.value.replace(/,/g, ''))}
+                                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        rows={4}
+                                        placeholder="Add optional notes for this scenario"
+                                    />
                                 ) : (
                                     <input
                                         type={typeof scenario[field] === 'number' ? 'number' : 'text'}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DEFAULT_BASELINE, DEFAULT_TREATMENT } from '../services/distributionUtils';
 import { getTooltipText } from '../services/tooltipService';
 import { Scenario, UserDistribution, UserElicitationData } from '../types';
@@ -41,15 +41,27 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
     onDistributionChange,
     onUpdateComment
 }) => {
+    const [commentEditorScenario, setCommentEditorScenario] = useState<Scenario | null>(null);
+    const [commentDraft, setCommentDraft] = useState('');
+
     const headers = scenarios.length > 0 ? Object.keys(scenarios[0]).filter(key => !['id', 'scenario_group', 'comment'].includes(key)) : [];
 
     const handleCommentButtonClick = (event: React.MouseEvent, scenario: Scenario) => {
         event.stopPropagation();
-        const existingComment = scenario.comment ?? '';
-        const newComment = window.prompt('Enter a comment for this scenario:', existingComment);
-        if (newComment !== null) {
-            onUpdateComment(scenario.id, newComment);
+        setCommentEditorScenario(scenario);
+        setCommentDraft(scenario.comment ?? '');
+    };
+
+    const closeCommentEditor = () => {
+        setCommentEditorScenario(null);
+        setCommentDraft('');
+    };
+
+    const handleCommentSave = () => {
+        if (commentEditorScenario) {
+            onUpdateComment(commentEditorScenario.id, commentDraft);
         }
+        closeCommentEditor();
     };
 
     const handleDistributionChange = (scenarioId: string, type: 'baseline' | 'treatment', field: keyof UserDistribution, value: number) => {
@@ -146,6 +158,7 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
     };
 
     return (
+        <>
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
             <div className="sm:flex sm:items-baseline">
                  <h2 className="text-xl font-semibold text-gray-800">Scenarios</h2>
@@ -420,5 +433,37 @@ export const ScenarioTable: React.FC<ScenarioTableProps> = ({
                 </table>
             </div>
         </div>
+        {commentEditorScenario && (
+            <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Comment for {commentEditorScenario.id}
+                    </h3>
+                    <textarea
+                        value={commentDraft}
+                        onChange={(e) => setCommentDraft(e.target.value)}
+                        rows={6}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
+                        placeholder="Add detailed notes for this scenario..."
+                        autoFocus
+                    />
+                    <div className="flex justify-end space-x-3 mt-6">
+                        <button
+                            onClick={closeCommentEditor}
+                            className="px-4 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleCommentSave}
+                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                        >
+                            Save Comment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
